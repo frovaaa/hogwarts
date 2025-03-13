@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ROSLIB, { Ros } from 'roslib';
+import { Container, Typography, CircularProgress, Alert, List, ListItem, ListItemText } from '@mui/material';
 
 export default function TopicsList() {
   const [topics, setTopics] = useState([]);
@@ -27,7 +28,14 @@ export default function TopicsList() {
       setLoading(false);
     });
 
-    return () => ros.close(); // Cleanup on unmount
+    // Fetch topics every 5 seconds
+    const interval = setInterval(() => fetchTopics(ros), 5000);
+
+    // Cleanup on unmount
+    return () => {
+      ros.close();
+      clearInterval(interval);
+    };
   }, []);
 
   const fetchTopics = (ros: Ros) => {
@@ -49,17 +57,19 @@ export default function TopicsList() {
     });
   };
 
-  if (loading) return <p>Loading topics...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (loading) return <CircularProgress />;
+  if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
-    <div style={{ textAlign: 'center', padding: '20px' }}>
-      <h1>ROS2 Topics</h1>
-      <ul>
+    <Container style={{ textAlign: 'center', padding: '20px' }}>
+      <Typography variant="h4" gutterBottom>ROS2 Topics</Typography>
+      <List>
         {topics.map((topic, index) => (
-          <li key={index}>{topic}</li>
+          <ListItem key={index}>
+            <ListItemText primary={topic} />
+          </ListItem>
         ))}
-      </ul>
-    </div>
+      </List>
+    </Container>
   );
 }
