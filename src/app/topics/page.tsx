@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import ROSLIB, { Ros } from 'roslib';
-import { Container, Typography, CircularProgress, Alert, List, ListItem, ListItemText } from '@mui/material';
+import {
+  Container,
+  Typography,
+  CircularProgress,
+  Alert,
+  List,
+  ListItem,
+  ListItemText,
+} from '@mui/material';
 
 export default function TopicsList() {
   const [topics, setTopics] = useState([]);
@@ -62,7 +70,9 @@ export default function TopicsList() {
 
   return (
     <Container style={{ textAlign: 'center', padding: '20px' }}>
-      <Typography variant="h4" gutterBottom>ROS2 Topics</Typography>
+      <Typography variant="h4" gutterBottom>
+        ROS2 Topics
+      </Typography>
       <List>
         {topics.map((topic, index) => (
           <ListItem key={index}>
