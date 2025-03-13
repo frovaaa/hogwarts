@@ -9,8 +9,11 @@ export default function TopicsList() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const rosbridgeUrl = `ws://${url.hostname}:9090`;
+
     const ros = new ROSLIB.Ros({
-      url: 'ws://localhost:9090', // Connect to rosbridge
+      url: rosbridgeUrl, // Connect to rosbridge
     });
 
     ros.on('connection', () => {
