@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import ROSLIB, { Ros } from "roslib";
-import nipplejs from "nipplejs";
+import dynamic from "next/dynamic";
 import {
   Container,
   Typography,
@@ -14,6 +14,9 @@ import {
   Paper,
   Box,
 } from "@mui/material";
+
+// ✅ Dynamically import nipplejs to prevent SSR issues
+const nipplejs = typeof window !== "undefined" ? require("nipplejs") : null;
 
 export default function TopicsList() {
   const [topics, setTopics] = useState([]);
@@ -79,7 +82,7 @@ export default function TopicsList() {
 
   // Initialize Joystick
   useEffect(() => {
-    if (!joystickRef.current || !cmdVelRef.current) return;
+    if (!joystickRef.current || !cmdVelRef.current || !nipplejs) return;
 
     const manager = nipplejs.create({
       zone: joystickRef.current,
