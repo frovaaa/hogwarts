@@ -15,6 +15,7 @@ import {
   Button,
 } from '@mui/material';
 import JoystickControl from '@/components/JoystickControl';
+import CameraFeed from '@/components/CameraFeed';
 
 export default function TopicsList() {
   const [topics, setTopics] = useState([]);
@@ -114,6 +115,7 @@ export default function TopicsList() {
         ROS2 Topics
       </Typography>
       <JoystickControl ros={ros} />
+      <CameraFeed ros={ros} />
       <List component={Paper}>
         {topics.map((topic, index) => (
           <ListItem key={index}>
