@@ -90,7 +90,7 @@ export default function TopicsList() {
     }
   };
 
-  if (loading) return <CircularProgress />;
+  // if (loading) return <CircularProgress />;
   if (!connected && error) {
     return (
       <Container style={{ textAlign: 'center', padding: '20px' }}>
