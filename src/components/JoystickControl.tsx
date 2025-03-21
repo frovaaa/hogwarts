@@ -31,8 +31,9 @@ export default function JoystickControl({ ros }: JoystickControlProps) {
 
                     manager.on('move', (evt: any, data: any) => {
                         if (data && data.vector) {
-                            const linearX = data.vector.y; // Forward/backward
-                            const angularZ = data.vector.x; // Left/right
+                            const speedFactor = 0.5; // Used to reduce the speed of the robot
+                            const linearX = data.vector.y * speedFactor; // Forward/backward
+                            const angularZ = -data.vector.x; // Left/right
 
                             const twist = new ROSLIB.Message({
                                 linear: { x: linearX, y: 0, z: 0 },
