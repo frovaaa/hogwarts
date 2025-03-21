@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import ROSLIB, { Ros } from 'roslib';
+import ROSLIB, { Ros, Topic } from 'roslib';
 import {
   Container,
   Typography,
@@ -10,12 +10,16 @@ import {
   List,
   ListItem,
   ListItemText,
+  Paper,
+  TextareaAutosize,
 } from '@mui/material';
 
 export default function TopicsList() {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [topicOutput, setTopicOutput] = useState('');
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -65,6 +69,27 @@ export default function TopicsList() {
     });
   };
 
+  const handleTopicClick = (topic: string) => {
+    setSelectedTopic(topic);
+    setTopicOutput(''); // Clear previous output
+
+    const ros = new ROSLIB.Ros({
+      url: `ws://${window.location.hostname}:9090`,
+    });
+
+    const rosTopic = new ROSLIB.Topic({
+      ros: ros,
+      name: topic,
+      messageType: 'std_msgs/String', // Adjust message type as needed
+    });
+
+    rosTopic.subscribe((message) => {
+      setTopicOutput((prevOutput) => `${prevOutput}\n${JSON.stringify(message)}`);
+    });
+
+    return () => rosTopic.unsubscribe();
+  };
+
   if (loading) return <CircularProgress />;
   if (error) return <Alert severity="error">{error}</Alert>;
 
@@ -73,13 +98,24 @@ export default function TopicsList() {
       <Typography variant="h4" gutterBottom>
         ROS2 Topics
       </Typography>
-      <List>
+      <List component={Paper}>
         {topics.map((topic, index) => (
-          <ListItem key={index}>
+          <ListItem component="li" button key={index} onClick={() => handleTopicClick(topic)}>
             <ListItemText primary={topic} />
           </ListItem>
         ))}
       </List>
+      {selectedTopic && (
+        <Paper style={{ marginTop: '20px', padding: '10px' }}>
+          <Typography variant="h6">{selectedTopic} Output</Typography>
+          <TextareaAutosize
+            minRows={10}
+            value={topicOutput}
+            style={{ width: '100%', marginTop: '10px' }}
+            readOnly
+          />
+        </Paper>
+      )}
     </Container>
   );
 }
