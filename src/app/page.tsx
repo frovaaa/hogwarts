@@ -7,17 +7,14 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  List,
-  ListItem,
-  ListItemText,
-  Paper,
   TextField,
   Button,
 } from '@mui/material';
 import JoystickControl from '@/components/JoystickControl';
 import CameraFeed from '@/components/CameraFeed';
+import TopicsList from '@/components/TopicsList';
 
-export default function TopicsList() {
+export default function TopicsListPage() {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,7 +33,7 @@ export default function TopicsList() {
 
   const connectToRos = (rosbridgeUrl: string) => {
     const rosInstance = new ROSLIB.Ros({
-      url: rosbridgeUrl, // Connect to rosbridge
+      url: rosbridgeUrl,
     });
 
     rosInstance.on('connection', () => {
@@ -55,7 +52,7 @@ export default function TopicsList() {
     // Fetch topics every 5 seconds
     const interval = setInterval(() => fetchTopics(rosInstance), 5000);
 
-    // Cleanup on unmount
+    // Cleanup after the page is unmounted
     return () => {
       rosInstance.close();
       clearInterval(interval);
@@ -84,13 +81,12 @@ export default function TopicsList() {
   const handleManualConnect = () => {
     if (manualIp) {
       const rosbridgeUrl = `ws://${manualIp}:9090`;
-      setError(''); // Clear previous errors
+      setError('');
       setLoading(true);
       connectToRos(rosbridgeUrl);
     }
   };
 
-  // if (loading) return <CircularProgress />;
   if (!connected && error) {
     return (
       <Container style={{ textAlign: 'center', padding: '20px' }}>
@@ -116,13 +112,7 @@ export default function TopicsList() {
       </Typography>
       <JoystickControl ros={ros} />
       <CameraFeed ros={ros} />
-      <List component={Paper}>
-        {topics.map((topic, index) => (
-          <ListItem key={index}>
-            <ListItemText primary={topic} />
-          </ListItem>
-        ))}
-      </List>
+      <TopicsList topics={topics} />
     </Container>
   );
 }
