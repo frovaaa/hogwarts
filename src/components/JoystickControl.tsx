@@ -19,7 +19,7 @@ export default function JoystickControl({ ros }: JoystickControlProps) {
                     manager = nipplejs.create({
                         zone: joystickContainer,
                         mode: 'static',
-                        position: { left: '50%', bottom: '50px' },
+                        position: { left: '50%', top: '50%' },
                         color: 'blue',
                     });
 
@@ -64,5 +64,11 @@ export default function JoystickControl({ ros }: JoystickControlProps) {
         };
     }, [ros]);
 
-    return <div id="joystick" style={{ width: '200px', height: '200px', margin: '0 auto' }}></div>;
+    return <div id="joystick" style={{
+        width: '200px',
+        height: '200px',
+        margin: '5em auto',
+        border: '1px solid black',
+        position: 'relative',
+    }}></div>;
 }

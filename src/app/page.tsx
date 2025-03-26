@@ -9,10 +9,12 @@ import {
   TextField,
   Button,
   Box,
+  Grid2 as Grid,
 } from '@mui/material';
 import JoystickControl from '@/components/JoystickControl';
 import CameraFeed from '@/components/CameraFeed';
 import TopicsList from '@/components/TopicsList';
+import ActionsPanel from '@/components/ActionsPanel';
 import ROSLIB from 'roslib';
 
 export default function Homepage() {
@@ -41,7 +43,8 @@ export default function Homepage() {
         topicsClient.callService(request, (result) => {
           if (result && result.topics) {
             setTopics(result.topics);
-            setError(null); // Clear error if topics are successfully fetched
+            // Clear error if topics are successfully fetched
+            setError(null);
           } else {
             setError('Failed to retrieve topics');
           }
@@ -97,14 +100,21 @@ export default function Homepage() {
         </Box>
       )}
       {connected && (
-        <>
-          <Typography variant="h4" gutterBottom>
-            ROS2 Topics
-          </Typography>
-          <JoystickControl ros={ros} />
-          <CameraFeed ros={ros} />
-          <TopicsList topics={topics} />
-        </>
+        <Grid container spacing={2}>
+          <Grid size={4}>
+            <Typography variant="h4" gutterBottom>
+              ROS2 Topics
+            </Typography>
+            <TopicsList topics={topics} />
+          </Grid>
+          <Grid size={8}>
+            <CameraFeed ros={ros} />
+            <ActionsPanel ros={ros} />
+            <Box display="flex" justifyContent="center" mt={2}>
+              <JoystickControl ros={ros} />
+            </Box>
+          </Grid>
+        </Grid>
       )}
     </Container>
   );

@@ -6,13 +6,15 @@ interface TopicsListProps {
 
 const TopicsList: React.FC<TopicsListProps> = ({ topics }) => {
     return (
-        <List component={Paper}>
-            {topics.map((topic, index) => (
-                <ListItem key={index}>
-                    <ListItemText primary={topic} />
-                </ListItem>
-            ))}
-        </List>
+        <Paper style={{ maxHeight: 300, overflow: 'auto' }}>
+            <List>
+                {topics.map((topic, index) => (
+                    <ListItem key={index}>
+                        <ListItemText primary={topic} />
+                    </ListItem>
+                ))}
+            </List>
+        </Paper>
     );
 };
 
