@@ -15,16 +15,17 @@ import CameraFeed from '@/components/CameraFeed';
 import TopicsList from '@/components/TopicsList';
 import ROSLIB from 'roslib';
 
-export default function TopicsListPage() {
+export default function Homepage() {
   const rosContext = useContext(RosContext);
 
   if (!rosContext) {
     throw new Error("TopicsListPage must be used within a RosProvider");
   }
 
-  const { connected, ros, rosIp, setRosIp, connectToRos } = rosContext;
+  const { connected, ros, rosIp, connectToRos } = rosContext;
   const [topics, setTopics] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [manualIp, setManualIp] = useState<string>(rosIp);
 
   useEffect(() => {
     if (connected && ros) {
@@ -55,8 +56,8 @@ export default function TopicsListPage() {
   }, [connected, ros]);
 
   const handleManualConnect = () => {
-    if (rosIp) {
-      connectToRos(`ws://${rosIp}:9090`);
+    if (manualIp) {
+      connectToRos(manualIp);
     }
   };
 
@@ -64,11 +65,11 @@ export default function TopicsListPage() {
     <Container style={{ textAlign: 'center', padding: '20px' }}>
       {!connected && (
         <Box mb={2}>
-          <Alert severity="error">
-            <Typography variant="h6" gutterBottom>
+          <Alert severity="error" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography variant="h6" gutterBottom style={{ textAlign: 'center' }}>
               Connection Error
             </Typography>
-            <Typography variant="body2">
+            <Typography variant="body2" style={{ textAlign: 'center' }}>
               Failed to connect to ROS2 WebSocket. Please enter the IP manually.
             </Typography>
           </Alert>
@@ -82,18 +83,18 @@ export default function TopicsListPage() {
         </Box>
       )}
       {!connected && (
-        <>
+        <Box display="flex" flexDirection="column" alignItems="center">
           <TextField
             label="ROS2 Bridge IP"
             variant="outlined"
-            value={rosIp}
-            onChange={(e) => setRosIp(e.target.value)}
+            value={manualIp}
+            onChange={(e) => setManualIp(e.target.value)}
             style={{ marginTop: '20px', marginBottom: '10px' }}
           />
           <Button variant="contained" color="primary" onClick={handleManualConnect}>
             Connect
           </Button>
-        </>
+        </Box>
       )}
       {connected && (
         <>

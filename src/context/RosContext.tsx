@@ -7,8 +7,7 @@ interface RosContextType {
     connected: boolean;
     ros: ROSLIB.Ros | null;
     rosIp: string;
-    setRosIp: React.Dispatch<React.SetStateAction<string>>;
-    connectToRos: (rosbridgeUrl: string) => void;
+    connectToRos: (rosIp: string) => void;
 }
 
 /**
@@ -34,12 +33,18 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     /**
-     * Connect to the ROS bridge server using the given URL (e.g., ws://localhost:9090).
-     * Sets up event listeners for connection, error, and close events.
-     * Sets up the connected state to true when connected.
-     * @param rosbridgeUrl The URL of the ROS bridge server in the format ws://<ip>:<port>.
+     * Connect to the ROS bridge server using the given IP.
+     * Updates the rosIp state and sets up the connection.
+     * @param ip - The IP address of the ROS bridge server
      */
-    const connectToRos = (rosbridgeUrl: string) => {
+    const connectToRos = (ip: string) => {
+        // Construct the full WebSocket URL
+        const rosbridgeUrl = `ws://${ip}:9090`;
+
+        // Update the rosIp state
+        setRosIp(ip);
+
+        // Create a new ROSLIB.Ros instance and set up event listeners
         const rosInstance = new ROSLIB.Ros({
             url: rosbridgeUrl,
         });
@@ -65,12 +70,12 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     /**
-     * Connect to the ROS bridge server when a new IP is set.
+     * Automatically connect to the ROS bridge server when rosIp changes.
      * Closes the connection when the component is unmounted.
      */
     useEffect(() => {
         if (rosIp) {
-            const rosInstance = connectToRos(`ws://${rosIp}:9090`);
+            const rosInstance = connectToRos(rosIp);
 
             return () => {
                 rosInstance.close();
@@ -84,7 +89,6 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
                 connected,
                 ros,
                 rosIp,
-                setRosIp,
                 connectToRos,
             }}
         >
