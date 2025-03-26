@@ -29,7 +29,7 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
         <Box mt={2} display="flex" justifyContent="center" gap={2}>
             <Button
                 variant="contained"
-                color="primary"
+                color="error"
                 onClick={() => publishLedColor(1.0, 0.0, 0.0)}
             >
                 Red LED
