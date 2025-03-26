@@ -1,118 +1,110 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import ROSLIB, { Ros } from 'roslib';
+import { useContext, useEffect, useState } from 'react';
+import { RosContext } from '@/context/RosContext';
 import {
   Container,
   Typography,
-  CircularProgress,
   Alert,
   TextField,
   Button,
+  Box,
 } from '@mui/material';
 import JoystickControl from '@/components/JoystickControl';
 import CameraFeed from '@/components/CameraFeed';
 import TopicsList from '@/components/TopicsList';
+import ROSLIB from 'roslib';
 
 export default function TopicsListPage() {
-  const [topics, setTopics] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [ros, setRos] = useState<Ros | null>(null);
-  const [manualIp, setManualIp] = useState('');
-  const [connected, setConnected] = useState(false);
+  const rosContext = useContext(RosContext);
+
+  if (!rosContext) {
+    throw new Error("TopicsListPage must be used within a RosProvider");
+  }
+
+  const { connected, ros, rosIp, setRosIp, connectToRos } = rosContext;
+  const [topics, setTopics] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      const rosbridgeUrl = `ws://${url.hostname}:9090`;
+    if (connected && ros) {
+      const fetchTopics = () => {
+        const topicsClient = new ROSLIB.Service({
+          ros,
+          name: '/rosapi/topics',
+          serviceType: 'rosapi/Topics',
+        });
 
-      connectToRos(rosbridgeUrl);
+        const request = new ROSLIB.ServiceRequest({});
+
+        topicsClient.callService(request, (result) => {
+          if (result && result.topics) {
+            setTopics(result.topics);
+            setError(null); // Clear error if topics are successfully fetched
+          } else {
+            setError('Failed to retrieve topics');
+          }
+        });
+      };
+
+      fetchTopics();
+      const interval = setInterval(fetchTopics, 5000);
+
+      return () => clearInterval(interval);
     }
-  }, []);
-
-  const connectToRos = (rosbridgeUrl: string) => {
-    const rosInstance = new ROSLIB.Ros({
-      url: rosbridgeUrl,
-    });
-
-    rosInstance.on('connection', () => {
-      console.log('Connected to ROS2 WebSocket');
-      setRos(rosInstance);
-      setConnected(true);
-      fetchTopics(rosInstance);
-    });
-
-    rosInstance.on('error', (err: unknown) => {
-      console.error('ROS2 Connection Error:', err);
-      setError('Failed to connect to ROS2 WebSocket. Please enter the IP manually.');
-      setLoading(false);
-    });
-
-    // Fetch topics every 5 seconds
-    const interval = setInterval(() => fetchTopics(rosInstance), 5000);
-
-    // Cleanup after the page is unmounted
-    return () => {
-      rosInstance.close();
-      clearInterval(interval);
-    };
-  };
-
-  const fetchTopics = (ros: Ros) => {
-    const topicsClient = new ROSLIB.Service({
-      ros: ros,
-      name: '/rosapi/topics',
-      serviceType: 'rosapi/Topics',
-    });
-
-    const request = new ROSLIB.ServiceRequest({});
-
-    topicsClient.callService(request, (result) => {
-      if (result && result.topics) {
-        setTopics(result.topics);
-      } else {
-        setError('Failed to retrieve topics');
-      }
-      setLoading(false);
-    });
-  };
+  }, [connected, ros]);
 
   const handleManualConnect = () => {
-    if (manualIp) {
-      const rosbridgeUrl = `ws://${manualIp}:9090`;
-      setError('');
-      setLoading(true);
-      connectToRos(rosbridgeUrl);
+    if (rosIp) {
+      connectToRos(`ws://${rosIp}:9090`);
     }
   };
-
-  if (!connected && error) {
-    return (
-      <Container style={{ textAlign: 'center', padding: '20px' }}>
-        <Alert severity="error">{error}</Alert>
-        <TextField
-          label="ROS2 Bridge IP"
-          variant="outlined"
-          value={manualIp}
-          onChange={(e) => setManualIp(e.target.value)}
-          style={{ marginTop: '20px', marginBottom: '10px' }}
-        />
-        <Button variant="contained" color="primary" onClick={handleManualConnect}>
-          Connect
-        </Button>
-      </Container>
-    );
-  }
 
   return (
     <Container style={{ textAlign: 'center', padding: '20px' }}>
-      <Typography variant="h4" gutterBottom>
-        ROS2 Topics
-      </Typography>
-      <JoystickControl ros={ros} />
-      <CameraFeed ros={ros} />
-      <TopicsList topics={topics} />
+      {!connected && (
+        <Box mb={2}>
+          <Alert severity="error">
+            <Typography variant="h6" gutterBottom>
+              Connection Error
+            </Typography>
+            <Typography variant="body2">
+              Failed to connect to ROS2 WebSocket. Please enter the IP manually.
+            </Typography>
+          </Alert>
+        </Box>
+      )}
+      {error && (
+        <Box mb={2}>
+          <Alert severity="warning">
+            <Typography variant="body2">{error}</Typography>
+          </Alert>
+        </Box>
+      )}
+      {!connected && (
+        <>
+          <TextField
+            label="ROS2 Bridge IP"
+            variant="outlined"
+            value={rosIp}
+            onChange={(e) => setRosIp(e.target.value)}
+            style={{ marginTop: '20px', marginBottom: '10px' }}
+          />
+          <Button variant="contained" color="primary" onClick={handleManualConnect}>
+            Connect
+          </Button>
+        </>
+      )}
+      {connected && (
+        <>
+          <Typography variant="h4" gutterBottom>
+            ROS2 Topics
+          </Typography>
+          <JoystickControl ros={ros} />
+          <CameraFeed ros={ros} />
+          <TopicsList topics={topics} />
+        </>
+      )}
     </Container>
   );
 }
