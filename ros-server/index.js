@@ -38,13 +38,24 @@ app.post('/move', async (req, res) => {
     );
 
     await actionClient.waitForServer(1000);
-    const goal = {
+
+    // print the goal to the console
+    console.log('Sending goal:', {
       x,
       y,
       theta,
       linear_speed,
       angular_speed,
       robot_world_ref_frame_name,
+    });
+
+    const goal = {
+      x: parseFloat(x) || 0.0,
+      y: parseFloat(y) || 0.0,
+      theta: parseFloat(theta) || 0.0,
+      linear_speed: parseFloat(linear_speed) || 0.0,
+      angular_speed: parseFloat(angular_speed) || 0.0,
+      robot_world_ref_frame_name: robot_world_ref_frame_name || '',
     };
 
     const goalHandle = await actionClient.sendGoal(goal);

@@ -33,12 +33,12 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          x: 1.0,
-          y: 1.0,
+          x: 0.1,
+          y: 0.0,
           theta: 0.0,
           linear_speed: 0.5,
           angular_speed: 0.5,
-          robot_world_ref_frame_name: '/odom',
+          robot_world_ref_frame_name: '/robomaster/odom',
         }),
       });
 

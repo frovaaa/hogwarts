@@ -15,6 +15,7 @@ import JoystickControl from '@/components/JoystickControl';
 import CameraFeed from '@/components/CameraFeed';
 import TopicsList from '@/components/TopicsList';
 import ActionsPanel from '@/components/ActionsPanel';
+import OdomData from '@/components/OdomData';
 import ROSLIB from 'roslib';
 
 export default function Homepage() {
@@ -121,6 +122,7 @@ export default function Homepage() {
               ROS2 Topics
             </Typography>
             <TopicsList topics={topics} />
+            <OdomData ros={ros} />
           </Grid>
           <Grid size={8}>
             <CameraFeed ros={ros} />
