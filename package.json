@@ -12,13 +12,16 @@
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@mui/material": "^6.4.8",
+    "@mui/material": "^6.4.10",
     "@mui/material-nextjs": "^6.4.3",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "next": "^15.2.4",
     "nipplejs": "^0.10.2",
+    "rclnodejs": "^0.33.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "roslib": "github:RobotWebTools/roslibjs#ros2-actions-no-typescript"
+    "roslib": "^1.4.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

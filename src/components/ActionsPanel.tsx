@@ -2,7 +2,7 @@ import { Box, Button } from '@mui/material';
 import ROSLIB from 'roslib';
 
 interface ActionsPanelProps {
-  ros: ROSLIB.Ros | null;
+  ros: any; // Keeping the prop for compatibility, but it's unused now
 }
 
 export default function ActionsPanel({ ros }: ActionsPanelProps) {
@@ -22,6 +22,36 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
       });
 
       ledColorPublisher.publish(msg);
+    }
+  };
+
+  const callMoveApi = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/move', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          x: 1.0,
+          y: 1.0,
+          theta: 0.0,
+          linear_speed: 0.5,
+          angular_speed: 0.5,
+          robot_world_ref_frame_name: '/odom',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Error:', error);
+        return;
+      }
+
+      const result = await response.json();
+      console.log('Result:', result);
+    } catch (err) {
+      console.error('API call error:', err);
     }
   };
 
@@ -48,43 +78,7 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
       >
         Blue LED
       </Button>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => {
-          if (ros) {
-            // const test = new ROSLIB.Action
-
-            const actionClient = new ROSLIB.ActionClient({
-              ros,
-              serverName: '/robomaster/move_robot_world_ref',
-              actionName: 'robomaster_hri_msgs/action/MoveRobotWorldRef',
-            });
-
-            const goal = new ROSLIB.Goal({
-              actionClient,
-              goalMessage: {
-                x: 1.0,
-                y: 1.0,
-                theta: 0.0,
-                linear_speed: 0.5,
-                angular_speed: 0.5,
-                robot_world_ref_frame_name: '/odom',
-              },
-            });
-
-            goal.on('feedback', (feedback) => {
-              console.log('Feedback:', feedback);
-            });
-
-            goal.on('result', (result) => {
-              console.log('Result:', result);
-            });
-
-            goal.send();
-          }
-        }}
-      >
+      <Button variant="contained" color="primary" onClick={callMoveApi}>
         Test Navigation
       </Button>
     </Box>
