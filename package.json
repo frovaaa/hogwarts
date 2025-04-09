@@ -18,7 +18,7 @@
     "nipplejs": "^0.10.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "roslib": "^1.4.1"
+    "roslib": "github:RobotWebTools/roslibjs#ros2-actions-no-typescript"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

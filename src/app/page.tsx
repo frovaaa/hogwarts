@@ -21,7 +21,7 @@ export default function Homepage() {
   const rosContext = useContext(RosContext);
 
   if (!rosContext) {
-    throw new Error("TopicsListPage must be used within a RosProvider");
+    throw new Error('TopicsListPage must be used within a RosProvider');
   }
 
   const { connected, ros, rosIp, connectToRos } = rosContext;
@@ -68,8 +68,19 @@ export default function Homepage() {
     <Container style={{ textAlign: 'center', padding: '20px' }}>
       {!connected && (
         <Box mb={2}>
-          <Alert severity="error" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography variant="h6" gutterBottom style={{ textAlign: 'center' }}>
+          <Alert
+            severity="error"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <Typography
+              variant="h6"
+              gutterBottom
+              style={{ textAlign: 'center' }}
+            >
               Connection Error
             </Typography>
             <Typography variant="body2" style={{ textAlign: 'center' }}>
@@ -94,7 +105,11 @@ export default function Homepage() {
             onChange={(e) => setManualIp(e.target.value)}
             style={{ marginTop: '20px', marginBottom: '10px' }}
           />
-          <Button variant="contained" color="primary" onClick={handleManualConnect}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleManualConnect}
+          >
             Connect
           </Button>
         </Box>
