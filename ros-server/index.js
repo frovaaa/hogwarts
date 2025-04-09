@@ -68,6 +68,49 @@ app.post('/move', async (req, res) => {
   }
 });
 
+app.post('/move-to-kid', async (req, res) => {
+  try {
+    const { kid } = req.body;
+
+    // Define positions for Kid 1 and Kid 2
+    const positions = {
+      kid1: { x: 0.7, y: 0.0, theta: 0.0 },
+      kid2: { x: 2.35, y: 0.0, theta: 0.0 },
+    };
+
+    if (!positions[kid]) {
+      return res.status(400).json({ error: 'Invalid kid identifier' });
+    }
+
+    const { x, y, theta } = positions[kid];
+
+    const actionClient = new rclnodejs.ActionClient(
+      node,
+      'robomaster_hri_msgs/action/MoveRobotWorldRef',
+      '/robomaster/move_robot_world_ref'
+    );
+
+    await actionClient.waitForServer(1000);
+
+    const goal = {
+      x,
+      y,
+      theta,
+      linear_speed: 0.5,
+      angular_speed: 0.5,
+      robot_world_ref_frame_name: '/robomaster/odom',
+    };
+
+    const goalHandle = await actionClient.sendGoal(goal);
+    const result = await goalHandle.getResult();
+
+    res.json({ result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.toString() });
+  }
+});
+
 // Gracefully shut down the node when the process exits
 process.on('SIGINT', async () => {
   console.log('Shutting down ROS 2 context...');
