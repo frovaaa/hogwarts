@@ -74,8 +74,8 @@ app.post('/move-to-kid', async (req, res) => {
 
     // Define positions for Kid 1 and Kid 2
     const positions = {
-      kid1: { x: 0.7, y: 0.0, theta: 0.0 },
-      kid2: { x: 2.35, y: 0.0, theta: 0.0 },
+      kid1: { x: 0.5, y: 1.0, theta: 0.0 },
+      kid2: { x: 0.5, y: -1.0, theta: 0.0 },
     };
 
     if (!positions[kid]) {
@@ -96,8 +96,8 @@ app.post('/move-to-kid', async (req, res) => {
       x,
       y,
       theta,
-      linear_speed: 0.5,
-      angular_speed: 0.5,
+      linear_speed: 1.5,
+      angular_speed: 1.2,
       robot_world_ref_frame_name: '/robomaster/odom',
     };
 

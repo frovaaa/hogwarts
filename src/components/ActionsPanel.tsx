@@ -44,11 +44,11 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          x: 0.1,
-          y: 0.1,
+          x: 0.0,
+          y: 0.0,
           theta: Math.PI / 2,
-          linear_speed: 0.5,
-          angular_speed: 0.5,
+          linear_speed: 0.001,
+          angular_speed: 1.2,
           robot_world_ref_frame_name: '/robomaster/odom',
         }),
       });
@@ -105,7 +105,7 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
         count++;
       }, 500); // 500ms interval
     };
-  
+
     if (behavior === 'good') {
       console.log('Marking good behavior...');
       blinkLed(0.0, 1.0, 0.0, 3); // Green LED blinks 3 times
@@ -126,8 +126,8 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
           x: 0.0,
           y: 0.0,
           theta: 0.0,
-          linear_speed: 0.5,
-          angular_speed: 0.5,
+          linear_speed: 1.5,
+          angular_speed: 1.2,
           robot_world_ref_frame_name: '/robomaster/odom',
         }),
       });
