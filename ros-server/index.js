@@ -18,7 +18,7 @@ let node; // Global ROS 2 node reference
 
     // Create + spin a node so DDS callbacks are processed continuously
     node = rclnodejs.createNode('move_robot_client');
-    rclnodejs.spin(node);
+    node.spin();
 
     console.log('ROS 2 context initialised');
   } catch (err) {
