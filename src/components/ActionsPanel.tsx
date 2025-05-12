@@ -2,7 +2,7 @@ import { Box, Button } from '@mui/material';
 import ROSLIB from 'roslib';
 
 interface ActionsPanelProps {
-  ros: any; // Keeping the prop for compatibility, but it's unused now
+  ros: ROSLIB.Ros | null; // Updated to use ROSLIB.Ros type and allow null
 }
 
 export default function ActionsPanel({ ros }: ActionsPanelProps) {
@@ -36,57 +36,95 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
     }
   };
 
-  const callMoveApi = async () => {
+  const callGenericAction = async (
+    actionName: string,
+    actionType: string,
+    goal: Record<string, unknown>
+  ) => {
+    // Changed goal type from any to Record<string, any>
+    console.log(
+      `Calling generic action: ${actionName}, Type: ${actionType}, Goal:`,
+      goal
+    );
     try {
-      const response = await fetch('http://localhost:4000/move', {
+      const response = await fetch('http://localhost:4000/generic-action', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          x: 0.0,
-          y: 0.0,
-          theta: Math.PI / 2,
-          linear_speed: 0.001,
-          angular_speed: 1.2,
-          robot_world_ref_frame_name: '/robomaster/odom',
+          actionName,
+          actionType,
+          goal,
         }),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error('Error:', error);
+        const errorText = await response.text();
+        console.error(
+          `Error calling action ${actionName} (${actionType}). Status: ${response.status}`,
+          errorText
+        );
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error('Error details:', errorJson);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_) {
+          // Changed e to _ as it is unused
+          // errorText is not JSON, already logged
+        }
         return;
       }
 
       const result = await response.json();
-      console.log('Result:', result);
+      console.log(`Result from action ${actionName} (${actionType}):`, result);
     } catch (err) {
-      console.error('API call error:', err);
+      console.error(
+        `API call error for action ${actionName} (${actionType}):`,
+        err
+      );
     }
   };
 
+  const callMoveApi = async () => {
+    const actionName = '/robomaster/move_robot_world_ref';
+    const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
+    const goal = {
+      x: 0.0,
+      y: 0.0,
+      theta: Math.PI / 2,
+      linear_speed: 0.001,
+      angular_speed: 1.2,
+      robot_world_ref_frame_name: '/robomaster/odom',
+    };
+    await callGenericAction(actionName, actionType, goal);
+  };
+
   const moveToKid = async (kid: 'kid1' | 'kid2') => {
-    try {
-      const response = await fetch('http://localhost:4000/move-to-kid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ kid }),
-      });
+    const actionName = '/robomaster/move_robot_world_ref';
+    const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
 
-      if (!response.ok) {
-        const errorText = await response.text(); // Read the response as text
-        console.error('Error:', errorText);
-        return;
-      }
+    const positions = {
+      kid1: { x: 0.5, y: 1.0, theta: 0.0 },
+      kid2: { x: 0.5, y: -1.0, theta: 0.0 },
+    };
 
-      const result = await response.json();
-      console.log(`Moved to ${kid}:`, result);
-    } catch (err) {
-      console.error('API call error:', err);
+    if (!positions[kid]) {
+      console.error('Invalid kid identifier');
+      return;
     }
+
+    const { x, y, theta } = positions[kid];
+    const goal = {
+      x,
+      y,
+      theta,
+      linear_speed: 1.5,
+      angular_speed: 1.2,
+      robot_world_ref_frame_name: '/robomaster/odom',
+    };
+    console.log(`Initiating move to ${kid}...`);
+    await callGenericAction(actionName, actionType, goal);
   };
 
   const markBehavior = async (behavior: 'good' | 'bad') => {
@@ -116,33 +154,18 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
   };
 
   const moveToOrigin = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/move', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          x: 0.0,
-          y: 0.0,
-          theta: 0.0,
-          linear_speed: 1.5,
-          angular_speed: 1.2,
-          robot_world_ref_frame_name: '/robomaster/odom',
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Error:', error);
-        return;
-      }
-
-      const result = await response.json();
-      console.log('Moved to origin:', result);
-    } catch (err) {
-      console.error('API call error:', err);
-    }
+    const actionName = '/robomaster/move_robot_world_ref';
+    const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
+    const goal = {
+      x: 0.0,
+      y: 0.0,
+      theta: 0.0,
+      linear_speed: 1.5,
+      angular_speed: 1.2,
+      robot_world_ref_frame_name: '/robomaster/odom',
+    };
+    console.log('Initiating move to origin...');
+    await callGenericAction(actionName, actionType, goal);
   };
 
   return (

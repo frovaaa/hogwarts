@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const express = require('express');
 const rclnodejs = require('rclnodejs');
 const cors = require('cors');
@@ -20,94 +21,59 @@ let node; // Declare the node globally
   }
 })();
 
-app.post('/move', async (req, res) => {
+app.post('/generic-action', async (req, res) => {
   try {
-    const {
-      x,
-      y,
-      theta,
-      linear_speed,
-      angular_speed,
-      robot_world_ref_frame_name,
-    } = req.body;
+    const { actionName, actionType, goal: goalData } = req.body;
 
-    const actionClient = new rclnodejs.ActionClient(
-      node,
-      'robomaster_hri_msgs/action/MoveRobotWorldRef',
-      '/robomaster/move_robot_world_ref'
-    );
-
-    await actionClient.waitForServer(1000);
-
-    // print the goal to the console
-    console.log('Sending goal:', {
-      x,
-      y,
-      theta,
-      linear_speed,
-      angular_speed,
-      robot_world_ref_frame_name,
-    });
-
-    const goal = {
-      x: parseFloat(x) || 0.0,
-      y: parseFloat(y) || 0.0,
-      theta: parseFloat(theta) || 0.0,
-      linear_speed: parseFloat(linear_speed) || 0.0,
-      angular_speed: parseFloat(angular_speed) || 0.0,
-      robot_world_ref_frame_name: robot_world_ref_frame_name || '',
-    };
-
-    const goalHandle = await actionClient.sendGoal(goal);
-    const result = await goalHandle.getResult();
-
-    res.json({ result });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.toString() });
-  }
-});
-
-app.post('/move-to-kid', async (req, res) => {
-  try {
-    const { kid } = req.body;
-
-    // Define positions for Kid 1 and Kid 2
-    const positions = {
-      kid1: { x: 0.5, y: 1.0, theta: 0.0 },
-      kid2: { x: 0.5, y: -1.0, theta: 0.0 },
-    };
-
-    if (!positions[kid]) {
-      return res.status(400).json({ error: 'Invalid kid identifier' });
+    if (!actionName || !actionType || !goalData) {
+      return res.status(400).json({
+        error: 'Missing actionName, actionType, or goal in request body',
+      });
     }
 
-    const { x, y, theta } = positions[kid];
+    if (!node) {
+      console.error('ROS 2 node is not initialized yet.');
+      return res.status(503).json({
+        error: 'ROS 2 node not initialized. Please try again shortly.',
+      });
+    }
+
+    console.log(
+      `Received request for generic action: Name: ${actionName}, Type: ${actionType}`
+    );
 
     const actionClient = new rclnodejs.ActionClient(
       node,
-      'robomaster_hri_msgs/action/MoveRobotWorldRef',
-      '/robomaster/move_robot_world_ref'
+      actionType, // Use actionType from request
+      actionName // Use actionName from request
     );
 
-    await actionClient.waitForServer(1000);
+    console.log(`Waiting for action server ${actionName} (${actionType})...`);
+    const serverAvailable = await actionClient.waitForServer(2000); // Wait for 2 seconds
+    if (!serverAvailable) {
+      const errorMessage = `Action server ${actionName} (${actionType}) not available.`;
+      console.error(errorMessage);
+      return res.status(503).json({ error: errorMessage });
+    }
+    console.log(`Action server ${actionName} (${actionType}) found.`);
 
-    const goal = {
-      x,
-      y,
-      theta,
-      linear_speed: 1.5,
-      angular_speed: 1.2,
-      robot_world_ref_frame_name: '/robomaster/odom',
-    };
+    console.log(
+      `Sending goal to ${actionName} (${actionType}):`,
+      JSON.stringify(goalData, null, 2)
+    );
 
-    const goalHandle = await actionClient.sendGoal(goal);
+    const goalHandle = await actionClient.sendGoal(goalData);
+    console.log(`Goal sent to ${actionName}, waiting for result...`);
     const result = await goalHandle.getResult();
+    console.log(`Result received from ${actionName}:`, result);
 
     res.json({ result });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.toString() });
+    console.error(
+      `Error in /generic-action (Name: ${req.body.actionName}, Type: ${req.body.actionType}):`,
+      err
+    );
+    res.status(500).json({ error: err.message || err.toString() });
   }
 });
 
