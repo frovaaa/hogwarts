@@ -12,7 +12,7 @@ import {
   Grid2 as Grid,
 } from '@mui/material';
 import JoystickControl from '@/components/JoystickControl';
-import CameraFeed from '@/components/CameraFeed';
+// import CameraFeed from '@/components/CameraFeed';
 // import TopicsList from '@/components/TopicsList';
 import ActionsPanel from '@/components/ActionsPanel';
 // import OdomData from '@/components/OdomData';
@@ -162,13 +162,13 @@ export default function Homepage() {
             <OdomData ros={ros} />
           </Grid> */}
           <Grid size={12}>
-            <CameraFeed ros={ros} />
+            {/* <CameraFeed ros={ros} /> */}
             <ActionsPanel
               ros={ros}
               manualIp={manualIp}
               onActionResult={handleActionResult}
             />
-            <Box display="flex" justifyContent="center" mt={2}>
+            <Box display="flex" justifyContent="center" mt={0}>
               <JoystickControl ros={ros} />
             </Box>
           </Grid>

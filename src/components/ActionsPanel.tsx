@@ -58,7 +58,7 @@ export default function ActionsPanel({
       goal
     );
     setIsActionInProgress(true); // Disable buttons
-    onActionResult?.({ success: null, message: `Executing ${actionName}...` }); // Notify intermediate state
+    // onActionResult?.({ success: null, message: `Executing ${actionName}...` }); // Notify intermediate state
     try {
       const response = await fetch(`http://${manualIp}:4000/generic-action`, {
         method: 'POST',
@@ -143,6 +143,8 @@ export default function ActionsPanel({
       robot_world_ref_frame_name: '/robomaster/odom',
     };
     console.log(`Initiating move to ${kid}...`);
+    // Notify intermediate state
+    onActionResult?.({ success: null, message: `Moving to ${kid}...` });
     await callGenericAction(actionName, actionType, goal);
   };
 
@@ -184,12 +186,14 @@ export default function ActionsPanel({
       robot_world_ref_frame_name: '/robomaster/odom',
     };
     console.log('Initiating move to origin...');
+    onActionResult?.({ success: null, message: `Moving to origin...` });
     await callGenericAction(actionName, actionType, goal);
   };
 
   return (
-    <Box mt={2} display="flex" justifyContent="center" gap={2}>
-      <Button
+    <>
+      <Box mt={2} mb={5} display="flex" justifyContent="center" gap={2}>
+        {/* <Button
         variant="contained"
         color="error"
         onClick={() => publishLedColor(1.0, 0.0, 0.0)}
@@ -216,48 +220,71 @@ export default function ActionsPanel({
         onClick={() => publishLedColor(0.0, 0.0, 0.0, 0.0)}
       >
         Turn Off LEDs
-      </Button>
-      {/* <Button variant="contained" color="primary" onClick={callMoveApi}>
+      </Button> */}
+        {/* <Button variant="contained" color="primary" onClick={callMoveApi}>
         Test Navigation
       </Button> */}
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => moveToKid('kid1')}
-        disabled={isActionInProgress} // Disable if action is in progress
-      >
-        Go to Kid 1
-      </Button>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => moveToKid('kid2')}
-        disabled={isActionInProgress} // Disable if action is in progress
-      >
-        Go to Kid 2
-      </Button>
-      <Button
-        variant="contained"
-        color="success"
-        onClick={() => markBehavior('good')}
-      >
-        Mark Good Behavior
-      </Button>
-      <Button
-        variant="contained"
-        color="error"
-        onClick={() => markBehavior('bad')}
-      >
-        Mark Bad Behavior
-      </Button>
-      <Button
-        variant="contained"
-        color="warning"
-        onClick={moveToOrigin}
-        disabled={isActionInProgress} // Disable if action is in progress
-      >
-        Go to Origin
-      </Button>
-    </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          style={{
+            fontSize: '1.5rem',
+            height: '10rem',
+          }}
+          onClick={() => moveToKid('kid1')}
+          disabled={isActionInProgress} // Disable if action is in progress
+        >
+          Go to Kid 1
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          style={{
+            fontSize: '1.5rem',
+            height: '10rem',
+          }}
+          onClick={() => moveToKid('kid2')}
+          disabled={isActionInProgress} // Disable if action is in progress
+        >
+          Go to Kid 2
+        </Button>
+        <Button
+          variant="contained"
+          color="warning"
+          style={{
+            fontSize: '1.5rem',
+            height: '10rem',
+          }}
+          onClick={moveToOrigin}
+          disabled={isActionInProgress} // Disable if action is in progress
+        >
+          Go to Origin
+        </Button>
+      </Box>
+      <Box mt={0} display="flex" justifyContent="center" gap={2}>
+        <Button
+          variant="contained"
+          color="success"
+          style={{
+            fontSize: '1.5rem',
+            height: '10rem',
+          }}
+          onClick={() => markBehavior('good')}
+        >
+          Mark Good Behavior
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          style={{
+            fontSize: '1.5rem',
+            height: '10rem',
+          }}
+          onClick={() => markBehavior('bad')}
+        >
+          Mark Bad Behavior
+        </Button>
+      </Box>
+    </>
   );
 }
