@@ -1,5 +1,6 @@
 import { Box, Button } from '@mui/material';
 import ROSLIB from 'roslib';
+import { useState } from 'react';
 
 interface ActionsPanelProps {
   ros: ROSLIB.Ros | null; // Updated to use ROSLIB.Ros type and allow null
@@ -15,6 +16,8 @@ export default function ActionsPanel({
   manualIp,
   onActionResult,
 }: ActionsPanelProps) {
+  const [isActionInProgress, setIsActionInProgress] = useState(false);
+
   const publishLedColor = (
     r: number,
     g: number,
@@ -54,6 +57,7 @@ export default function ActionsPanel({
       `Calling generic action: ${actionName}, Type: ${actionType}, Goal:`,
       goal
     );
+    setIsActionInProgress(true); // Disable buttons
     onActionResult?.({ success: null, message: `Executing ${actionName}...` }); // Notify intermediate state
     try {
       const response = await fetch(`http://${manualIp}:4000/generic-action`, {
@@ -96,6 +100,8 @@ export default function ActionsPanel({
         success: false,
         message: `Error executing ${actionName}.`,
       }); // Notify failure
+    } finally {
+      setIsActionInProgress(false); // Re-enable buttons
     }
   };
 
@@ -218,6 +224,7 @@ export default function ActionsPanel({
         variant="contained"
         color="primary"
         onClick={() => moveToKid('kid1')}
+        disabled={isActionInProgress} // Disable if action is in progress
       >
         Go to Kid 1
       </Button>
@@ -225,6 +232,7 @@ export default function ActionsPanel({
         variant="contained"
         color="primary"
         onClick={() => moveToKid('kid2')}
+        disabled={isActionInProgress} // Disable if action is in progress
       >
         Go to Kid 2
       </Button>
@@ -242,7 +250,12 @@ export default function ActionsPanel({
       >
         Mark Bad Behavior
       </Button>
-      <Button variant="contained" color="warning" onClick={moveToOrigin}>
+      <Button
+        variant="contained"
+        color="warning"
+        onClick={moveToOrigin}
+        disabled={isActionInProgress} // Disable if action is in progress
+      >
         Go to Origin
       </Button>
     </Box>
