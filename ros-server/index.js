@@ -7,23 +7,40 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let node; // Declare the node globally
+let node; // Global ROS 2 node reference
 
-// Initialize rclnodejs and create the node once
+// ------------------------------------------------------
+// ROS 2 initialisation
+// ------------------------------------------------------
 (async () => {
   try {
     await rclnodejs.init();
-    node = new rclnodejs.Node('move_robot_client');
-    console.log('ROS 2 context initialized');
+
+    // Create + spin a node so DDS callbacks are processed continuously
+    node = rclnodejs.createNode('move_robot_client');
+    rclnodejs.spin(node);
+
+    console.log('ROS 2 context initialised');
   } catch (err) {
-    console.error('Failed to initialize ROS 2 context:', err);
-    process.exit(1); // Exit if initialization fails
+    console.error('Failed to initialise ROS 2 context:', err);
+    process.exit(1); // hard‑fail if ROS 2 can’t start
   }
 })();
 
+// ------------------------------------------------------
+// Generic‑action REST endpoint
+// ------------------------------------------------------
+/**
+ * POST /generic-action
+ * {
+ *   "actionName": "/robomaster/move_robot_world_ref",
+ *   "actionType": "robomaster_hri_msgs/action/MoveRobotWorldRef",
+ *   "goal": { /* fields matching <actionType>.Goal *\/ }
+ * }
+ */
 app.post('/generic-action', async (req, res) => {
   try {
-    const { actionName, actionType, goal: goalData } = req.body;
+    const { actionName, actionType, goal: goalData } = req.body || {};
 
     if (!actionName || !actionType || !goalData) {
       return res.status(400).json({
@@ -32,59 +49,77 @@ app.post('/generic-action', async (req, res) => {
     }
 
     if (!node) {
-      console.error('ROS 2 node is not initialized yet.');
-      return res.status(503).json({
-        error: 'ROS 2 node not initialized. Please try again shortly.',
-      });
+      console.error('[generic-action] ROS node not ready yet');
+      return res
+        .status(503)
+        .json({ error: 'ROS 2 node not initialised yet, try again shortly.' });
     }
 
-    console.log(
-      `Received request for generic action: Name: ${actionName}, Type: ${actionType}`
-    );
+    console.log(`Received request: ${actionName} (${actionType})`);
 
+    // Dynamically load the generated interface (throws if the package is missing)
+    const ActionInterface = rclnodejs.require(actionType);
+
+    // Create an ActionClient for this (type,name) pair
     const actionClient = new rclnodejs.ActionClient(
       node,
-      actionType, // Use actionType from request
-      actionName // Use actionName from request
+      actionType,
+      actionName
     );
 
-    console.log(`Waiting for action server ${actionName} (${actionType})...`);
-    const serverAvailable = await actionClient.waitForServer(2000); // Wait for 2 seconds
-    if (!serverAvailable) {
-      const errorMessage = `Action server ${actionName} (${actionType}) not available.`;
-      console.error(errorMessage);
-      return res.status(503).json({ error: errorMessage });
+    console.log(`Waiting for server ${actionName} …`);
+    const available = await actionClient.waitForServer(5000);
+    if (!available) {
+      return res.status(503).json({
+        error: `Action server ${actionName} (${actionType}) not available`,
+      });
     }
-    console.log(`Action server ${actionName} (${actionType}) found.`);
+    console.log(`Server found — sending goal`);
 
-    console.log(
-      `Sending goal to ${actionName} (${actionType}):`,
-      JSON.stringify(goalData, null, 2)
-    );
+    // Wrap the incoming goalData in a proper <Type>.Goal instance
+    const goalMsg = new ActionInterface.Goal(goalData);
 
-    const goalHandle = await actionClient.sendGoal(goalData);
-    console.log(`Goal sent to ${actionName}, waiting for result...`);
-    const result = await goalHandle.getResult();
-    console.log(`Result received from ${actionName}:`, result);
+    const goalHandle = await actionClient.sendGoal(goalMsg);
 
-    res.json({ result });
+    // ------------------------------------------------------------------
+    // Await the result
+    // ------------------------------------------------------------------
+    let resultMsg;
+    try {
+      resultMsg = await goalHandle.getResult(); // rclnodejs returns only the .Result message
+    } catch (err) {
+      console.error('getResult() failed:', err);
+      return res
+        .status(504)
+        .json({ error: 'Timed-out waiting for action result' });
+    }
+
+    const status = goalHandle.status; // GoalStatus code (0 = UNKNOWN, 4 = SUCCEEDED, …)
+
+    console.log('Action finished — status:', status, 'result:', resultMsg);
+
+    // Ensure HTTP reply is JSON‑serialisable; if the Result contains nested
+    // ROS 2 message wrappers we strip the raw object via toJSON() fallback
+    const safeResult = JSON.parse(JSON.stringify(resultMsg));
+
+    return res.json({ status, result: safeResult });
   } catch (err) {
-    console.error(
-      `Error in /generic-action (Name: ${req.body.actionName}, Type: ${req.body.actionType}):`,
-      err
-    );
-    res.status(500).json({ error: err.message || err.toString() });
+    console.error('[generic-action] fatal error:', err);
+    return res.status(500).json({ error: err.message || String(err) });
   }
 });
 
-// Gracefully shut down the node when the process exits
+// ------------------------------------------------------
+// Graceful shutdown
+// ------------------------------------------------------
 process.on('SIGINT', async () => {
-  console.log('Shutting down ROS 2 context...');
-  if (node) {
-    node.destroy();
+  console.log('Shutting down …');
+  try {
+    if (node) node.destroy();
+    await rclnodejs.shutdown();
+  } finally {
+    process.exit(0);
   }
-  await rclnodejs.shutdown();
-  process.exit(0);
 });
 
 app.listen(4000, () => console.log('ROS server running on port 4000'));
