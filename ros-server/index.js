@@ -22,7 +22,7 @@ let node; // Global ROS 2 node reference
 
     console.log('ROS 2 context initialised');
   } catch (err) {
-    console.error('Failed to initialise ROS 2 context:', err);
+    console.error('Failed to initialise ROS 2 context:', err);
     process.exit(1); // hard‑fail if ROS 2 can’t start
   }
 })();

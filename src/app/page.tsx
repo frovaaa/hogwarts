@@ -30,6 +30,16 @@ export default function Homepage() {
   const [error, setError] = useState<string | null>(null);
   const [manualIp, setManualIp] = useState<string>(rosIp);
 
+  const ipFromUrl =
+    typeof window !== 'undefined' ? window.location.hostname : null;
+
+  useEffect(() => {
+    if (!manualIp && ipFromUrl) {
+      setManualIp(ipFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualIp]);
+
   useEffect(() => {
     if (connected && ros) {
       const fetchTopics = () => {
@@ -126,7 +136,7 @@ export default function Homepage() {
           </Grid>
           <Grid size={8}>
             <CameraFeed ros={ros} />
-            <ActionsPanel ros={ros} />
+            <ActionsPanel ros={ros} manualIp={manualIp} />
             <Box display="flex" justifyContent="center" mt={2}>
               <JoystickControl ros={ros} />
             </Box>

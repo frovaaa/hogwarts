@@ -3,9 +3,10 @@ import ROSLIB from 'roslib';
 
 interface ActionsPanelProps {
   ros: ROSLIB.Ros | null; // Updated to use ROSLIB.Ros type and allow null
+  manualIp: string; // Added manualIp to props
 }
 
-export default function ActionsPanel({ ros }: ActionsPanelProps) {
+export default function ActionsPanel({ ros, manualIp }: ActionsPanelProps) {
   const publishLedColor = (
     r: number,
     g: number,
@@ -47,7 +48,8 @@ export default function ActionsPanel({ ros }: ActionsPanelProps) {
       goal
     );
     try {
-      const response = await fetch('http://localhost:4000/generic-action', {
+      const response = await fetch(`http://${manualIp}:4000/generic-action`, {
+        // Updated to use manualIp
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
