@@ -174,6 +174,58 @@ export default function ActionsPanel({
     }
   };
 
+  const rotateOnSpot = (cycles: number, angularSpeed: number) => {
+    if (!ros) {
+      console.error(
+        'ROS connection is not available. Cannot rotate on the spot.'
+      );
+      return;
+    }
+
+    console.log(`Rotating on the spot for ${cycles} cycles…`);
+    const cmdVelTopic = new ROSLIB.Topic({
+      ros,
+      name: '/robomaster/cmd_vel',
+      messageType: 'geometry_msgs/Twist',
+    });
+
+    const phaseDir = [+1, -1, +1]; // direction of each phase
+    const phaseTicks = [1, 2, 1]; // how many 500 ms ticks each phase lasts
+    const ticksPerCycle = phaseTicks.reduce((a, b) => a + b, 0);
+
+    let tick = 0;
+    const interval = setInterval(() => {
+      if (tick >= cycles * ticksPerCycle) {
+        clearInterval(interval);
+        cmdVelTopic.publish(
+          new ROSLIB.Message({
+            linear: { x: 0, y: 0, z: 0 },
+            angular: { x: 0, y: 0, z: 0 },
+          })
+        );
+        console.log('Rotation completed.');
+        return;
+      }
+
+      // Which phase are we in?
+      let phase = 0;
+      let ticksIntoCycle = tick % ticksPerCycle;
+      while (ticksIntoCycle >= phaseTicks[phase]) {
+        ticksIntoCycle -= phaseTicks[phase];
+        phase++;
+      }
+
+      const dir = phaseDir[phase];
+      cmdVelTopic.publish(
+        new ROSLIB.Message({
+          linear: { x: 0, y: 0, z: 0 },
+          angular: { x: 0, y: 0, z: dir * angularSpeed },
+        })
+      );
+      tick++;
+    }, 200);
+  };
+
   const moveToOrigin = async () => {
     const actionName = '/robomaster/move_robot_world_ref';
     const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
@@ -262,7 +314,7 @@ export default function ActionsPanel({
         </Button>
       </Box>
       <Box mt={0} display="flex" justifyContent="center" gap={2}>
-        <Button
+        {/* <Button
           variant="contained"
           color="success"
           style={{
@@ -272,7 +324,7 @@ export default function ActionsPanel({
           onClick={() => markBehavior('good')}
         >
           Mark Good Behavior
-        </Button>
+        </Button> */}
         <Button
           variant="contained"
           color="error"
@@ -283,6 +335,17 @@ export default function ActionsPanel({
           onClick={() => markBehavior('bad')}
         >
           Mark Bad Behavior
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          style={{
+            fontSize: '1.5rem',
+            height: '10rem',
+          }}
+          onClick={() => rotateOnSpot(3, 2.5)} // Rotate 5 cycles with angular speed 1.0
+        >
+          HEADSHAKE Bad BEHAVIOR
         </Button>
       </Box>
     </>

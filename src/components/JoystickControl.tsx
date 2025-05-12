@@ -9,6 +9,7 @@ interface JoystickControlProps {
 
 export default function JoystickControl({ ros }: JoystickControlProps) {
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let manager: any;
 
     if (ros) {
@@ -29,6 +30,7 @@ export default function JoystickControl({ ros }: JoystickControlProps) {
             messageType: 'geometry_msgs/Twist',
           });
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           manager.on('move', (evt: any, data: any) => {
             if (data && data.vector) {
               const speedFactor = 0.5; // Used to reduce the speed of the robot
