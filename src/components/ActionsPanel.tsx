@@ -4,9 +4,17 @@ import ROSLIB from 'roslib';
 interface ActionsPanelProps {
   ros: ROSLIB.Ros | null; // Updated to use ROSLIB.Ros type and allow null
   manualIp: string; // Added manualIp to props
+  onActionResult?: (result: {
+    success: boolean | null;
+    message: string;
+  }) => void; // Added callback for action result
 }
 
-export default function ActionsPanel({ ros, manualIp }: ActionsPanelProps) {
+export default function ActionsPanel({
+  ros,
+  manualIp,
+  onActionResult,
+}: ActionsPanelProps) {
   const publishLedColor = (
     r: number,
     g: number,
@@ -42,14 +50,13 @@ export default function ActionsPanel({ ros, manualIp }: ActionsPanelProps) {
     actionType: string,
     goal: Record<string, unknown>
   ) => {
-    // Changed goal type from any to Record<string, any>
     console.log(
       `Calling generic action: ${actionName}, Type: ${actionType}, Goal:`,
       goal
     );
+    onActionResult?.({ success: null, message: `Executing ${actionName}...` }); // Notify intermediate state
     try {
       const response = await fetch(`http://${manualIp}:4000/generic-action`, {
-        // Updated to use manualIp
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,40 +74,44 @@ export default function ActionsPanel({ ros, manualIp }: ActionsPanelProps) {
           `Error calling action ${actionName} (${actionType}). Status: ${response.status}`,
           errorText
         );
-        try {
-          const errorJson = JSON.parse(errorText);
-          console.error('Error details:', errorJson);
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (_) {
-          // Changed e to _ as it is unused
-          // errorText is not JSON, already logged
-        }
+        onActionResult?.({
+          success: false,
+          message: `Failed to execute ${actionName}.`,
+        }); // Notify failure
         return;
       }
 
       const result = await response.json();
       console.log(`Result from action ${actionName} (${actionType}):`, result);
+      onActionResult?.({
+        success: true,
+        message: `${actionName} executed successfully.`,
+      }); // Notify success
     } catch (err) {
       console.error(
         `API call error for action ${actionName} (${actionType}):`,
         err
       );
+      onActionResult?.({
+        success: false,
+        message: `Error executing ${actionName}.`,
+      }); // Notify failure
     }
   };
 
-  const callMoveApi = async () => {
-    const actionName = '/robomaster/move_robot_world_ref';
-    const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
-    const goal = {
-      x: 0.0,
-      y: 0.0,
-      theta: Math.PI / 2,
-      linear_speed: 0.001,
-      angular_speed: 1.2,
-      robot_world_ref_frame_name: '/robomaster/odom',
-    };
-    await callGenericAction(actionName, actionType, goal);
-  };
+  // const callMoveApi = async () => {
+  //   const actionName = '/robomaster/move_robot_world_ref';
+  //   const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
+  //   const goal = {
+  //     x: 0.0,
+  //     y: 0.0,
+  //     theta: Math.PI / 2,
+  //     linear_speed: 0.001,
+  //     angular_speed: 1.2,
+  //     robot_world_ref_frame_name: '/robomaster/odom',
+  //   };
+  //   await callGenericAction(actionName, actionType, goal);
+  // };
 
   const moveToKid = async (kid: 'kid1' | 'kid2') => {
     const actionName = '/robomaster/move_robot_world_ref';
@@ -143,15 +154,15 @@ export default function ActionsPanel({ ros, manualIp }: ActionsPanelProps) {
           publishLedColor(0.0, 0.0, 0.0, 0.0); // Turn off
         }
         count++;
-      }, 500); // 500ms interval
+      }, 100); // 500ms interval
     };
 
     if (behavior === 'good') {
       console.log('Marking good behavior...');
-      blinkLed(0.0, 1.0, 0.0, 3); // Green LED blinks 3 times
+      blinkLed(0.0, 1.0, 0.0, 5); // Green LED blinks 5 times
     } else if (behavior === 'bad') {
       console.log('Marking bad behavior...');
-      blinkLed(1.0, 0.0, 0.0, 3); // Red LED blinks 3 times
+      blinkLed(1.0, 0.0, 0.0, 5); // Red LED blinks 5 times
     }
   };
 
@@ -200,9 +211,9 @@ export default function ActionsPanel({ ros, manualIp }: ActionsPanelProps) {
       >
         Turn Off LEDs
       </Button>
-      <Button variant="contained" color="primary" onClick={callMoveApi}>
+      {/* <Button variant="contained" color="primary" onClick={callMoveApi}>
         Test Navigation
-      </Button>
+      </Button> */}
       <Button
         variant="contained"
         color="primary"
