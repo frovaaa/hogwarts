@@ -12,11 +12,11 @@ import {
   Grid2 as Grid,
 } from '@mui/material';
 import JoystickControl from '@/components/JoystickControl';
-import CameraFeed from '@/components/CameraFeed';
-import TopicsList from '@/components/TopicsList';
+// import CameraFeed from '@/components/CameraFeed';
+// import TopicsList from '@/components/TopicsList';
 import ActionsPanel from '@/components/ActionsPanel';
-import OdomData from '@/components/OdomData';
-import ROSLIB from 'roslib';
+// import OdomData from '@/components/OdomData';
+// import ROSLIB from 'roslib';
 
 export default function Homepage() {
   const rosContext = useContext(RosContext);
@@ -26,43 +26,65 @@ export default function Homepage() {
   }
 
   const { connected, ros, rosIp, connectToRos } = rosContext;
-  const [topics, setTopics] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  // const [topics, setTopics] = useState<string[]>([]);
+  // const [error, setError] = useState<string | null>(null);
   const [manualIp, setManualIp] = useState<string>(rosIp);
+  const [actionResult, setActionResult] = useState<{
+    success: boolean | null;
+    message: string;
+  } | null>(null);
+
+  const ipFromUrl =
+    typeof window !== 'undefined' ? window.location.hostname : null;
 
   useEffect(() => {
-    if (connected && ros) {
-      const fetchTopics = () => {
-        const topicsClient = new ROSLIB.Service({
-          ros,
-          name: '/rosapi/topics',
-          serviceType: 'rosapi/Topics',
-        });
-
-        const request = new ROSLIB.ServiceRequest({});
-
-        topicsClient.callService(request, (result) => {
-          if (result && result.topics) {
-            setTopics(result.topics);
-            // Clear error if topics are successfully fetched
-            setError(null);
-          } else {
-            setError('Failed to retrieve topics');
-          }
-        });
-      };
-
-      fetchTopics();
-      const interval = setInterval(fetchTopics, 5000);
-
-      return () => clearInterval(interval);
+    if (!manualIp && ipFromUrl) {
+      setManualIp(ipFromUrl);
     }
-  }, [connected, ros]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualIp]);
+
+  //////// FETCH TOPICS //////////
+  // useEffect(() => {
+  //   if (connected && ros) {
+  //     const fetchTopics = () => {
+  //       const topicsClient = new ROSLIB.Service({
+  //         ros,
+  //         name: '/rosapi/topics',
+  //         serviceType: 'rosapi/Topics',
+  //       });
+
+  //       const request = new ROSLIB.ServiceRequest({});
+
+  //       topicsClient.callService(request, (result) => {
+  //         if (result && result.topics) {
+  //           setTopics(result.topics);
+  //           // Clear error if topics are successfully fetched
+  //           setError(null);
+  //         } else {
+  //           setError('Failed to retrieve topics');
+  //         }
+  //       });
+  //     };
+
+  //     fetchTopics();
+  //     const interval = setInterval(fetchTopics, 5000);
+
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [connected, ros]);
 
   const handleManualConnect = () => {
     if (manualIp) {
       connectToRos(manualIp);
     }
+  };
+
+  const handleActionResult = (result: {
+    success: boolean | null;
+    message: string;
+  }) => {
+    setActionResult(result);
   };
 
   return (
@@ -90,10 +112,25 @@ export default function Homepage() {
           </Alert>
         </Box>
       )}
-      {error && (
+      {/* {error && (
         <Box mb={2}>
           <Alert severity="warning">
             <Typography variant="body2">{error}</Typography>
+          </Alert>
+        </Box>
+      )} */}
+      {actionResult && (
+        <Box mt={2}>
+          <Alert
+            severity={
+              actionResult.success === null
+                ? 'warning'
+                : actionResult.success
+                ? 'success'
+                : 'error'
+            }
+          >
+            <Typography variant="body2">{actionResult.message}</Typography>
           </Alert>
         </Box>
       )}
@@ -117,17 +154,21 @@ export default function Homepage() {
       )}
       {connected && (
         <Grid container spacing={2}>
-          <Grid size={4}>
+          {/* <Grid size={4}>
             <Typography variant="h4" gutterBottom>
               ROS2 Topics
             </Typography>
             <TopicsList topics={topics} />
             <OdomData ros={ros} />
-          </Grid>
-          <Grid size={8}>
-            <CameraFeed ros={ros} />
-            <ActionsPanel ros={ros} />
-            <Box display="flex" justifyContent="center" mt={2}>
+          </Grid> */}
+          <Grid size={12}>
+            {/* <CameraFeed ros={ros} /> */}
+            <ActionsPanel
+              ros={ros}
+              manualIp={manualIp}
+              onActionResult={handleActionResult}
+            />
+            <Box display="flex" justifyContent="center" mt={0}>
               <JoystickControl ros={ros} />
             </Box>
           </Grid>
