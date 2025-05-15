@@ -15,7 +15,7 @@ import JoystickControl from '@/components/JoystickControl';
 // import CameraFeed from '@/components/CameraFeed';
 // import TopicsList from '@/components/TopicsList';
 import ActionsPanel from '@/components/ActionsPanel';
-import OdomData from '@/components/OdomData';
+// import OdomData from '@/components/OdomData';
 // import OptitrackData from '@/components/OptitrackData';
 // import OdomData from '@/components/OdomData';
 // import ROSLIB from 'roslib';
