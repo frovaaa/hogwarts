@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Run the server
 
-## Getting Started
+`npm run dev`
 
-First, run the development server:
+# NOTES
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Open the scene
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Run in command line of coppeliaSim
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+simRobomaster = require('simRobomaster')
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+I also had to download the models from the branch 4.4 of
+https://github.com/jeguzzi/robomaster_sim/tree/main
 
-## Learn More
+ros2 bridge server run with:
+`ros2 launch rosbridge_server rosbridge_websocket_launch.xml`
 
-To learn more about Next.js, take a look at the following resources:
+Start ssh server to connect vscode if in hyper-v:
+`sudo systemctl start ssh`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+navigation server
+`ros2 run navigation_world_ref_action_server navigation_world_ref_action_server_node`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# STARTUP
 
-## Deploy on Vercel
+Open coppeliaSim and run the simulation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`ros2 launch robomaster_ros ep.launch name:=robomaster conn_type:=ap`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`ros2 launch rosbridge_server rosbridge_websocket_launch.xml`
+
+`ros2 run navigation_world_ref_action_server navigation_world_ref_action_server_node`
+
+`ros2 launch move_arm_action_server move_arm_action_server_node.launch.xml`
+
+## Arm motion action
+
+`ros2 action send_goal /robomaster/move_arm_motion robomaster_hri_msgs/action/MoveArmMotion "{motion_type: 1}" --feedback`
+
+## Close and open box (move arm up and down with gripper closed)
+
+`ros2 action send_goal /robomaster/move_arm_pose robomaster_hri_msgs/action/MoveArmPose "{pose_type: 2}" --feedback`
+`ros2 action send_goal /robomaster/move_arm_pose robomaster_hri_msgs/action/MoveArmPose "{pose_type: 4}" --feedback`
+
+## Gripper actions
+
+### Close
+
+`ros2 action send_goal /robomaster/gripper robomaster_msgs/action/GripperControl "{target_state: 2, power: 0.5}" --feedback`
+
+### Open
+
+`ros2 action send_goal /robomaster/gripper robomaster_msgs/action/GripperControl "{target_state: 1, power: 0.5}" --feedback`
+
+## Audio
+
+### Play sound
+
+Change the sound_id to play different sounds.
+
+`ros2 topic pub /robomaster/cmd_sound robomaster_msgs/msg/SpeakerCommand "{control: 1, sound_id: 263, times: 1}" --once`
+
+## Optitrack rotation of world
+
+`ros2 run tf2_ros static_transform_publisher 0 0 0 -1.5707963 0 -1.5707963 world_enu world`
+
+`ros2 launch optitrack_ros_py all.launch`
