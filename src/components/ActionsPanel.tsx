@@ -148,8 +148,18 @@ export default function ActionsPanel({
     await callGenericAction(actionName, actionType, goal);
   };
 
-  const markBehavior = async (behavior: 'good' | 'bad') => {
-    const blinkLed = (r: number, g: number, b: number, times: number) => {
+  const ledFeedback = async (
+    behavior: 'good' | 'bad',
+    times: number = 5, // Default to 5 times if not specified
+    speed: number = 100 // Default to 100ms interval if not specified
+  ) => {
+    const blinkLed = (
+      r: number,
+      g: number,
+      b: number,
+      times: number,
+      speed: number
+    ) => {
       let count = 0;
       const interval = setInterval(() => {
         if (count >= times * 2) {
@@ -162,15 +172,19 @@ export default function ActionsPanel({
           publishLedColor(0.0, 0.0, 0.0, 0.0); // Turn off
         }
         count++;
-      }, 100); // 500ms interval
+      }, speed); // Parametric interval
     };
 
     if (behavior === 'good') {
-      console.log('Marking good behavior...');
-      blinkLed(0.0, 1.0, 0.0, 5); // Green LED blinks 5 times
+      console.log(
+        `Marking good behavior with ${times} blinks at ${speed}ms speed...`
+      );
+      blinkLed(0.0, 1.0, 0.0, times, speed); // Green LED blinks specified times
     } else if (behavior === 'bad') {
-      console.log('Marking bad behavior...');
-      blinkLed(1.0, 0.0, 0.0, 5); // Red LED blinks 5 times
+      console.log(
+        `Marking bad behavior with ${times} blinks at ${speed}ms speed...`
+      );
+      blinkLed(1.0, 0.0, 0.0, times, speed); // Red LED blinks specified times
     }
   };
 
@@ -189,25 +203,14 @@ export default function ActionsPanel({
       messageType: 'geometry_msgs/Twist',
     });
 
-    const phaseDir = [+1, -1, +1]; // direction of each phase
-    const phaseTicks = [1, 2, 1]; // how many 500 ms ticks each phase lasts
+    const phaseDir = [+1, -1, +1]; // Direction for each phase
+    const phaseTicks = [1, 2, 1]; // Tick duration (each 200ms) for each phase
     const ticksPerCycle = phaseTicks.reduce((a, b) => a + b, 0);
+    const totalTicks = cycles * ticksPerCycle;
 
     let tick = 0;
     const interval = setInterval(() => {
-      if (tick >= cycles * ticksPerCycle) {
-        clearInterval(interval);
-        cmdVelTopic.publish(
-          new ROSLIB.Message({
-            linear: { x: 0, y: 0, z: 0 },
-            angular: { x: 0, y: 0, z: 0 },
-          })
-        );
-        console.log('Rotation completed.');
-        return;
-      }
-
-      // Which phase are we in?
+      // Determine which phase we're in
       let phase = 0;
       let ticksIntoCycle = tick % ticksPerCycle;
       while (ticksIntoCycle >= phaseTicks[phase]) {
@@ -222,8 +225,24 @@ export default function ActionsPanel({
           angular: { x: 0, y: 0, z: dir * angularSpeed },
         })
       );
+
+      // Stop immediately after the final tick
+      if (tick === totalTicks - 1) {
+        setTimeout(() => {
+          cmdVelTopic.publish(
+            new ROSLIB.Message({
+              linear: { x: 0, y: 0, z: 0 },
+              angular: { x: 0, y: 0, z: 0 },
+            })
+          );
+          console.log('Rotation completed and robot stopped.');
+        }, 200); // buffer to ensure the last movement gets sent first
+
+        clearInterval(interval);
+      }
+
       tick++;
-    }, 200);
+    }, 200); // 200ms per tick
   };
 
   const moveToOrigin = async () => {
@@ -242,40 +261,60 @@ export default function ActionsPanel({
     await callGenericAction(actionName, actionType, goal);
   };
 
+  const playSound = () => {
+    if (!ros) {
+      console.error('ROS connection is not available. Cannot play sound.');
+      return;
+    }
+
+    console.log('Playing sound...');
+    const soundTopic = new ROSLIB.Topic({
+      ros,
+      name: '/robomaster/cmd_sound',
+      messageType: 'robomaster_msgs/msg/SpeakerCommand',
+    });
+
+    // Function to play and stop sound
+    const playAndStopSound = (times: number) => {
+      if (times <= 0) return;
+
+      // Publish the "start sound" message
+      soundTopic.publish(
+        new ROSLIB.Message({
+          control: 1,
+          sound_id: 262,
+          times: 1,
+        })
+      );
+
+      // Delay and publish the "stop sound" message
+      setTimeout(() => {
+        soundTopic.publish(
+          new ROSLIB.Message({
+            control: 0,
+            sound_id: 262,
+          })
+        );
+
+        // Recursively play and stop sound again
+        setTimeout(() => playAndStopSound(times - 1), 100);
+      }, 500);
+    };
+
+    // Play and stop sound twice
+    playAndStopSound(2);
+  };
+
+  const markBadBehaviorWithAllActions = () => {
+    console.log('Executing all actions for marking bad behavior...');
+    ledFeedback('bad', 8, 100); // Blink red LEDs
+    playSound(); // Play sound
+    rotateOnSpot(2, 3.0); // Perform headshake
+  };
+
   return (
     <>
       <Box mt={2} mb={5} display="flex" justifyContent="center" gap={2}>
-        {/* <Button
-        variant="contained"
-        color="error"
-        onClick={() => publishLedColor(1.0, 0.0, 0.0)}
-      >
-        Red LED
-      </Button>
-      <Button
-        variant="contained"
-        color="success"
-        onClick={() => publishLedColor(0.0, 1.0, 0.0)}
-      >
-        Green LED
-      </Button>
-      <Button
-        variant="contained"
-        color="info"
-        onClick={() => publishLedColor(0.0, 0.0, 1.0)}
-      >
-        Blue LED
-      </Button>
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={() => publishLedColor(0.0, 0.0, 0.0, 0.0)}
-      >
-        Turn Off LEDs
-      </Button> */}
-        {/* <Button variant="contained" color="primary" onClick={callMoveApi}>
-        Test Navigation
-      </Button> */}
         <Button
           variant="contained"
           color="primary"
@@ -314,17 +353,6 @@ export default function ActionsPanel({
         </Button>
       </Box>
       <Box mt={0} display="flex" justifyContent="center" gap={2}>
-        {/* <Button
-          variant="contained"
-          color="success"
-          style={{
-            fontSize: '1.5rem',
-            height: '10rem',
-          }}
-          onClick={() => markBehavior('good')}
-        >
-          Mark Good Behavior
-        </Button> */}
         <Button
           variant="contained"
           color="error"
@@ -332,21 +360,10 @@ export default function ActionsPanel({
             fontSize: '1.5rem',
             height: '10rem',
           }}
-          onClick={() => markBehavior('bad')}
-        >
-          Mark Bad Behavior
-        </Button>
-        <Button
-          variant="contained"
-          color="error"
-          style={{
-            fontSize: '1.5rem',
-            height: '10rem',
-          }}
-          onClick={() => rotateOnSpot(3, 2.5)} // Rotate 5 cycles with angular speed 1.0
+          onClick={markBadBehaviorWithAllActions}
           disabled={isActionInProgress} // Disable if action is in progress
         >
-          HEADSHAKE Bad BEHAVIOR
+          Mark Bad Behavior
         </Button>
       </Box>
     </>
