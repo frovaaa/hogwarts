@@ -40,7 +40,12 @@ Open coppeliaSim and run the simulation
 
 ## Close and open box (move arm up and down with gripper closed)
 
+### Close box (Arm up)
+
 `ros2 action send_goal /robomaster/move_arm_pose robomaster_hri_msgs/action/MoveArmPose "{pose_type: 2}" --feedback`
+
+### Open box (Arm down)
+
 `ros2 action send_goal /robomaster/move_arm_pose robomaster_hri_msgs/action/MoveArmPose "{pose_type: 4}" --feedback`
 
 ## Gripper actions
