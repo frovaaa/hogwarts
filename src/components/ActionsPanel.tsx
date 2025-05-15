@@ -320,6 +320,25 @@ export default function ActionsPanel({
     await callGenericAction(actionName, actionType, goal);
   };
 
+  const publishPanicSignal = () => {
+    if (ros) {
+      console.log('Publishing panic signal to /robomaster/panic');
+      const panicPublisher = new ROSLIB.Topic({
+        ros,
+        name: '/robomaster/panic',
+        messageType: 'std_msgs/Empty',
+      });
+
+      const msg = new ROSLIB.Message({});
+      panicPublisher.publish(msg);
+      console.log('Panic signal published.');
+    } else {
+      console.error(
+        'ROS connection is not available. Cannot publish panic signal.'
+      );
+    }
+  };
+
   return (
     <>
       <Box mt={2} mb={5} display="flex" justifyContent="center" gap={2}>
@@ -380,7 +399,6 @@ export default function ActionsPanel({
           color="primary"
           style={{ fontSize: '1.5rem', height: '10rem' }}
           onClick={() => moveArmPose(2)}
-          disabled={isActionInProgress}
         >
           Move Arm | Close Box
         </Button>
@@ -389,9 +407,18 @@ export default function ActionsPanel({
           color="primary"
           style={{ fontSize: '1.5rem', height: '10rem' }}
           onClick={() => moveArmPose(4)}
-          disabled={isActionInProgress}
         >
           Move Arm | Open Box
+        </Button>
+      </Box>
+      <Box mt={2} display="flex" justifyContent="center" gap={2}>
+        <Button
+          variant="contained"
+          color="error"
+          style={{ fontSize: '1.5rem', height: '10rem' }}
+          onClick={publishPanicSignal}
+        >
+          Panic Button
         </Button>
       </Box>
     </>

@@ -34,6 +34,12 @@ Open coppeliaSim and run the simulation
 
 `ros2 launch move_arm_action_server move_arm_action_server_node.launch.xml`
 
+`ros2 run safety panic_handler_node`
+
+## Safety Panic Stop
+
+`ros2 topic pub /robomaster/panic std_msgs/msg/Empty "{}"`
+
 ## Arm motion action
 
 `ros2 action send_goal /robomaster/move_arm_motion robomaster_hri_msgs/action/MoveArmMotion "{motion_type: 1}" --feedback`
