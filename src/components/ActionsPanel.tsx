@@ -312,6 +312,14 @@ export default function ActionsPanel({
     rotateOnSpot(2, 3.0); // Perform headshake
   };
 
+  const moveArmPose = async (poseType: number) => {
+    const actionName = '/robomaster/move_arm_pose';
+    const actionType = 'robomaster_hri_msgs/action/MoveArmPose';
+    const goal = { pose_type: poseType };
+
+    await callGenericAction(actionName, actionType, goal);
+  };
+
   return (
     <>
       <Box mt={2} mb={5} display="flex" justifyContent="center" gap={2}>
@@ -364,6 +372,26 @@ export default function ActionsPanel({
           disabled={isActionInProgress} // Disable if action is in progress
         >
           Mark Bad Behavior
+        </Button>
+      </Box>
+      <Box mt={2} display="flex" justifyContent="center" gap={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          style={{ fontSize: '1.5rem', height: '10rem' }}
+          onClick={() => moveArmPose(2)}
+          disabled={isActionInProgress}
+        >
+          Move Arm | Close Box
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          style={{ fontSize: '1.5rem', height: '10rem' }}
+          onClick={() => moveArmPose(4)}
+          disabled={isActionInProgress}
+        >
+          Move Arm | Open Box
         </Button>
       </Box>
     </>
