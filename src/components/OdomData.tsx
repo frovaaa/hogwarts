@@ -17,8 +17,15 @@ export default function OdomData({ ros }: OdomDataProps) {
         messageType: 'nav_msgs/Odometry',
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const handleOdomMessage = (message: any) => {
-        setOdom(JSON.stringify(message, null, 2));
+        const { position, orientation } = message.pose.pose;
+        const formattedData = JSON.stringify(
+          { position, orientation },
+          null,
+          2
+        );
+        setOdom(formattedData);
       };
 
       odomListener.subscribe(handleOdomMessage);

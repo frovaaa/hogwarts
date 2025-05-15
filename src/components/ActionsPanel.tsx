@@ -114,7 +114,7 @@ export default function ActionsPanel({
   //     theta: Math.PI / 2,
   //     linear_speed: 0.001,
   //     angular_speed: 1.2,
-  //     robot_world_ref_frame_name: '/robomaster/odom',
+  //     robot_world_ref_frame_name: '/optitrack/robomaster_frova',
   //   };
   //   await callGenericAction(actionName, actionType, goal);
   // };
@@ -140,7 +140,7 @@ export default function ActionsPanel({
       theta,
       linear_speed: 1.5,
       angular_speed: 1.2,
-      robot_world_ref_frame_name: '/robomaster/odom',
+      robot_world_ref_frame_name: 'world',
     };
     console.log(`Initiating move to ${kid}...`);
     // Notify intermediate state
@@ -235,7 +235,7 @@ export default function ActionsPanel({
       theta: 0.0,
       linear_speed: 1.5,
       angular_speed: 1.2,
-      robot_world_ref_frame_name: '/robomaster/odom',
+      robot_world_ref_frame_name: 'world',
     };
     console.log('Initiating move to origin...');
     onActionResult?.({ success: null, message: `Moving to origin...` });
@@ -344,6 +344,7 @@ export default function ActionsPanel({
             height: '10rem',
           }}
           onClick={() => rotateOnSpot(3, 2.5)} // Rotate 5 cycles with angular speed 1.0
+          disabled={isActionInProgress} // Disable if action is in progress
         >
           HEADSHAKE Bad BEHAVIOR
         </Button>

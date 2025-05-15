@@ -15,6 +15,8 @@ import JoystickControl from '@/components/JoystickControl';
 // import CameraFeed from '@/components/CameraFeed';
 // import TopicsList from '@/components/TopicsList';
 import ActionsPanel from '@/components/ActionsPanel';
+import OdomData from '@/components/OdomData';
+// import OptitrackData from '@/components/OptitrackData';
 // import OdomData from '@/components/OdomData';
 // import ROSLIB from 'roslib';
 
@@ -161,6 +163,7 @@ export default function Homepage() {
             <TopicsList topics={topics} />
             <OdomData ros={ros} />
           </Grid> */}
+          {/* <OptitrackData ros={ros} /> */}
           <Grid size={12}>
             {/* <CameraFeed ros={ros} /> */}
             <ActionsPanel
@@ -171,6 +174,7 @@ export default function Homepage() {
             <Box display="flex" justifyContent="center" mt={0}>
               <JoystickControl ros={ros} />
             </Box>
+            {/* <OdomData ros={ros} /> */}
           </Grid>
         </Grid>
       )}
