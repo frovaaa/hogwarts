@@ -88,9 +88,11 @@ export default function ActionsPanel({
       const result = await response.json();
       console.log(`Result from action ${actionName} (${actionType}):`, result);
       onActionResult?.({
-        success: true,
-        message: `${actionName} executed successfully.`,
-      }); // Notify success
+        success: result.result.success === true,
+        message: result.result.success
+          ? `${actionName} executed successfully.`
+          : `Failed to execute ${actionName}.`,
+      }); // Notify success or failure based on result.success
     } catch (err) {
       console.error(
         `API call error for action ${actionName} (${actionType}):`,
@@ -124,8 +126,8 @@ export default function ActionsPanel({
     const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
 
     const positions = {
-      kid1: { x: 0.5, y: 1.0, theta: 0.0 },
-      kid2: { x: 0.5, y: -1.0, theta: 0.0 },
+      kid1: { x: 0.5, y: 0.5, theta: 0.0 },
+      kid2: { x: 0.5, y: -0.5, theta: 0.0 },
     };
 
     if (!positions[kid]) {
@@ -196,6 +198,8 @@ export default function ActionsPanel({
       return;
     }
 
+    setIsActionInProgress(true); // Disable buttons
+
     console.log(`Rotating on the spot for ${cycles} cycles…`);
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
@@ -236,6 +240,7 @@ export default function ActionsPanel({
             })
           );
           console.log('Rotation completed and robot stopped.');
+          setIsActionInProgress(false); // Re-enable buttons
         }, 200); // buffer to ensure the last movement gets sent first
 
         clearInterval(interval);
@@ -322,7 +327,7 @@ export default function ActionsPanel({
 
   const publishPanicSignal = () => {
     if (ros) {
-      console.log('Publishing panic signal to /robomaster/panic');
+      console.log('Publishing panic signal to /robomaster/panic 5 times');
       const panicPublisher = new ROSLIB.Topic({
         ros,
         name: '/robomaster/panic',
@@ -330,8 +335,18 @@ export default function ActionsPanel({
       });
 
       const msg = new ROSLIB.Message({});
-      panicPublisher.publish(msg);
-      console.log('Panic signal published.');
+      let count = 0;
+
+      const interval = setInterval(() => {
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('Panic signal published 5 times.');
+          return;
+        }
+        panicPublisher.publish(msg);
+        console.log(`Panic signal published (${count + 1}/5).`);
+        count++;
+      }, 100); // Publish every 100ms
     } else {
       console.error(
         'ROS connection is not available. Cannot publish panic signal.'
