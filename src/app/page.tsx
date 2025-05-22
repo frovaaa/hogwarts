@@ -35,6 +35,8 @@ export default function Homepage() {
     success: boolean | null;
     message: string;
   } | null>(null);
+  // --- MoveSpeed state lifted up ---
+  const [moveSpeed, setMoveSpeed] = useState(0.5);
 
   const ipFromUrl =
     typeof window !== 'undefined' ? window.location.hostname : null;
@@ -45,36 +47,6 @@ export default function Homepage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manualIp]);
-
-  //////// FETCH TOPICS //////////
-  // useEffect(() => {
-  //   if (connected && ros) {
-  //     const fetchTopics = () => {
-  //       const topicsClient = new ROSLIB.Service({
-  //         ros,
-  //         name: '/rosapi/topics',
-  //         serviceType: 'rosapi/Topics',
-  //       });
-
-  //       const request = new ROSLIB.ServiceRequest({});
-
-  //       topicsClient.callService(request, (result) => {
-  //         if (result && result.topics) {
-  //           setTopics(result.topics);
-  //           // Clear error if topics are successfully fetched
-  //           setError(null);
-  //         } else {
-  //           setError('Failed to retrieve topics');
-  //         }
-  //       });
-  //     };
-
-  //     fetchTopics();
-  //     const interval = setInterval(fetchTopics, 5000);
-
-  //     return () => clearInterval(interval);
-  //   }
-  // }, [connected, ros]);
 
   const handleManualConnect = () => {
     if (manualIp) {
@@ -170,9 +142,11 @@ export default function Homepage() {
               ros={ros}
               manualIp={manualIp}
               onActionResult={handleActionResult}
+              moveSpeed={moveSpeed}
+              setMoveSpeed={setMoveSpeed}
             />
             <Box display="flex" justifyContent="center" mt={0}>
-              <JoystickControl ros={ros} />
+              <JoystickControl ros={ros} moveSpeed={moveSpeed} />
             </Box>
             {/* <OdomData ros={ros} /> */}
           </Grid>

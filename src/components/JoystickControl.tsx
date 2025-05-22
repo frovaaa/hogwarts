@@ -5,9 +5,13 @@ import ROSLIB, { Ros } from 'roslib';
 
 interface JoystickControlProps {
   ros: Ros | null;
+  moveSpeed: number;
 }
 
-export default function JoystickControl({ ros }: JoystickControlProps) {
+export default function JoystickControl({
+  ros,
+  moveSpeed,
+}: JoystickControlProps) {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let manager: any;
@@ -33,9 +37,9 @@ export default function JoystickControl({ ros }: JoystickControlProps) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           manager.on('move', (evt: any, data: any) => {
             if (data && data.vector) {
-              const speedFactor = 0.5; // Used to reduce the speed of the robot
+              const speedFactor = moveSpeed; // Use moveSpeed from props
               const linearX = data.vector.y * speedFactor; // Forward/backward
-              const angularZ = -data.vector.x; // Left/right
+              const angularZ = -data.vector.x * speedFactor; // Left/right, scale with moveSpeed
 
               const twist = new ROSLIB.Message({
                 linear: { x: linearX, y: 0, z: 0 },
@@ -64,7 +68,7 @@ export default function JoystickControl({ ros }: JoystickControlProps) {
         manager.destroy();
       }
     };
-  }, [ros]);
+  }, [ros, moveSpeed]);
 
   return (
     <div

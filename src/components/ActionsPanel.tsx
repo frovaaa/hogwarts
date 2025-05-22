@@ -9,22 +9,53 @@ interface ActionsPanelProps {
     success: boolean | null;
     message: string;
   }) => void; // Added callback for action result
+  moveSpeed: number;
+  setMoveSpeed: (v: number) => void;
 }
+
+// Enum for arm poses
+enum ArmPose {
+  OPEN_BOX = 4,
+  CLOSE_BOX = 2,
+}
+
+// Enum for gripper states
+enum GripperState {
+  OPEN = 1,
+  CLOSE = 2,
+}
+
+// Position interface and named positions
+export interface Position {
+  x: number;
+  y: number;
+  theta: number;
+  label: string;
+}
+
+export const Positions: Record<string, Position> = {
+  KID1: { x: 0.5, y: 0.5, theta: 0.0, label: 'kid1' },
+  KID2: { x: 0.5, y: -0.5, theta: 0.0, label: 'kid2' },
+  ORIGIN: { x: 0.0, y: 0.0, theta: 0.0, label: 'origin' },
+};
 
 export default function ActionsPanel({
   ros,
   manualIp,
   onActionResult,
+  moveSpeed,
+  setMoveSpeed,
 }: ActionsPanelProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isActionInProgress, setIsActionInProgress] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [gripperPower, setGripperPower] = useState(0.5);
   // --- New state for LED intensity and blink ---
   const [ledIntensity, setLedIntensity] = useState(1.0);
   const [ledBlinkTimes, setLedBlinkTimes] = useState(5);
   const [ledBlinkSpeed, setLedBlinkSpeed] = useState(100);
   // --- New state for feedback intensity ---
   const [feedbackLevel, setFeedbackLevel] = useState(1);
-  // --- New state for movement speed ---
-  const [moveSpeed, setMoveSpeed] = useState(1.5);
 
   const publishLedColor = (
     r: number,
@@ -96,10 +127,11 @@ export default function ActionsPanel({
       const result = await response.json();
       console.log(`Result from action ${actionName} (${actionType}):`, result);
       onActionResult?.({
-        success: result.result.success === true,
-        message: result.result.success
-          ? `${actionName} executed successfully.`
-          : `Failed to execute ${actionName}.`,
+        success: result.result.success === true || result.status == 4,
+        message:
+          result.result.success || result.status == 4
+            ? `${actionName} executed successfully.`
+            : `Failed to execute ${actionName}.`,
       }); // Notify success or failure based on result.success
     } catch (err) {
       console.error(
@@ -115,46 +147,20 @@ export default function ActionsPanel({
     }
   };
 
-  // const callMoveApi = async () => {
-  //   const actionName = '/robomaster/move_robot_world_ref';
-  //   const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
-  //   const goal = {
-  //     x: 0.0,
-  //     y: 0.0,
-  //     theta: Math.PI / 2,
-  //     linear_speed: 0.001,
-  //     angular_speed: 1.2,
-  //     robot_world_ref_frame_name: '/optitrack/robomaster_frova',
-  //   };
-  //   await callGenericAction(actionName, actionType, goal);
-  // };
-
-  const moveToKid = async (kid: 'kid1' | 'kid2') => {
+  // Helper to move to any position
+  const moveToPosition = async (pos: Position) => {
     const actionName = '/robomaster/move_robot_world_ref';
     const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
-
-    const positions = {
-      kid1: { x: 0.5, y: 0.5, theta: 0.0 },
-      kid2: { x: 0.5, y: -0.5, theta: 0.0 },
-    };
-
-    if (!positions[kid]) {
-      console.error('Invalid kid identifier');
-      return;
-    }
-
-    const { x, y, theta } = positions[kid];
     const goal = {
-      x,
-      y,
-      theta,
-      linear_speed: 1.5,
+      x: pos.x,
+      y: pos.y,
+      theta: pos.theta,
+      linear_speed: 1.5 * moveSpeed,
       angular_speed: 1.2,
       robot_world_ref_frame_name: 'world',
     };
-    console.log(`Initiating move to ${kid}...`);
-    // Notify intermediate state
-    onActionResult?.({ success: null, message: `Moving to ${kid}...` });
+    console.log(`Initiating move to ${pos.label}...`);
+    onActionResult?.({ success: null, message: `Moving to ${pos.label}...` });
     await callGenericAction(actionName, actionType, goal);
   };
 
@@ -258,22 +264,6 @@ export default function ActionsPanel({
     }, 200); // 200ms per tick
   };
 
-  const moveToOrigin = async () => {
-    const actionName = '/robomaster/move_robot_world_ref';
-    const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
-    const goal = {
-      x: 0.0,
-      y: 0.0,
-      theta: 0.0,
-      linear_speed: 1.5,
-      angular_speed: 1.2,
-      robot_world_ref_frame_name: 'world',
-    };
-    console.log('Initiating move to origin...');
-    onActionResult?.({ success: null, message: `Moving to origin...` });
-    await callGenericAction(actionName, actionType, goal);
-  };
-
   const playSound = () => {
     if (!ros) {
       console.error('ROS connection is not available. Cannot play sound.');
@@ -318,14 +308,7 @@ export default function ActionsPanel({
     playAndStopSound(2);
   };
 
-  const markBadBehaviorWithAllActions = () => {
-    console.log('Executing all actions for marking bad behavior...');
-    ledFeedback('bad', 8, 100); // Blink red LEDs
-    playSound(); // Play sound
-    rotateOnSpot(2, 3.0); // Perform headshake
-  };
-
-  const moveArmPose = async (poseType: number) => {
+  const moveArmPose = async (poseType: ArmPose) => {
     const actionName = '/robomaster/move_arm_pose';
     const actionType = 'robomaster_hri_msgs/action/MoveArmPose';
     const goal = { pose_type: poseType };
@@ -363,10 +346,13 @@ export default function ActionsPanel({
   };
 
   // --- Gripper control ---
-  const handleGripper = async (open: boolean) => {
-    const actionName = '/robomaster/gripper_action';
-    const actionType = 'robomaster_hri_msgs/action/GripperAction';
-    const goal = { open };
+  const handleGripper = async (targetState: GripperState) => {
+    const actionName = '/robomaster/gripper';
+    const actionType = 'robomaster_msgs/action/GripperControl';
+    const goal = {
+      target_state: targetState,
+      power: gripperPower,
+    };
     await callGenericAction(actionName, actionType, goal);
   };
 
@@ -374,12 +360,12 @@ export default function ActionsPanel({
   const handleMacro = async (macro: string) => {
     if (macro === 'share_lego') {
       // Example: open box, play sound, move arm, etc.
-      await moveArmPose(4); // Open box
+      await moveArmPose(ArmPose.OPEN_BOX); // Open box
       playSound();
     } else if (macro === 'pass_piece') {
-      await moveArmPose(2); // Close box
-      await moveToKid('kid2');
-      await moveArmPose(4); // Open box
+      await moveArmPose(ArmPose.CLOSE_BOX); // Close box
+      await moveToPosition(Positions.KID2); // Move to Kid 2
+      await moveArmPose(ArmPose.OPEN_BOX); // Open box
     } else if (macro === 'encourage_collab') {
       ledFeedback('good', 8, 80);
       rotateOnSpot(2, 2.5);
@@ -401,16 +387,39 @@ export default function ActionsPanel({
       rotateOnSpot(2, 2.5);
     }
   };
+  const moveBack = (distance = -0.2, duration = 300) => {
+    if (!ros) {
+      console.error('ROS connection is not available. Cannot move back.');
+      return;
+    }
+    const cmdVelTopic = new ROSLIB.Topic({
+      ros,
+      name: '/robomaster/cmd_vel',
+      messageType: 'geometry_msgs/Twist',
+    });
+    const twist = new ROSLIB.Message({
+      linear: { x: distance, y: 0, z: 0 },
+      angular: { x: 0, y: 0, z: 0 },
+    });
+    cmdVelTopic.publish(twist);
+    setTimeout(() => {
+      const stopTwist = new ROSLIB.Message({
+        linear: { x: 0, y: 0, z: 0 },
+        angular: { x: 0, y: 0, z: 0 },
+      });
+      cmdVelTopic.publish(stopTwist);
+    }, duration);
+  };
   const handleNegativeFeedback = () => {
-    // Level 1: red blink, Level 2: red blink + stop, Level 3: red blink + move away
+    // Level 1: red blink, Level 2: red blink + back, Level 3: red blink + more back
     if (feedbackLevel === 1) {
       ledFeedback('bad', 2, 120);
     } else if (feedbackLevel === 2) {
       ledFeedback('bad', 4, 80);
-      moveToOrigin();
+      moveBack();
     } else {
       ledFeedback('bad', 6, 60);
-      moveToOrigin();
+      moveBack(-0.4, 500); // Go further back and for longer
     }
   };
 
@@ -495,10 +504,16 @@ export default function ActionsPanel({
         <Typography variant="h6">Gripper</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
-          <Button variant="outlined" onClick={() => handleGripper(true)}>
+          <Button
+            variant="outlined"
+            onClick={() => handleGripper(GripperState.OPEN)}
+          >
             Open Gripper
           </Button>
-          <Button variant="outlined" onClick={() => handleGripper(false)}>
+          <Button
+            variant="outlined"
+            onClick={() => handleGripper(GripperState.CLOSE)}
+          >
             Close Gripper
           </Button>
         </Stack>
@@ -508,10 +523,16 @@ export default function ActionsPanel({
         <Typography variant="h6">Arm / Box</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
-          <Button variant="outlined" onClick={() => moveArmPose(4)}>
+          <Button
+            variant="outlined"
+            onClick={() => moveArmPose(ArmPose.OPEN_BOX)}
+          >
             Open Box
           </Button>
-          <Button variant="outlined" onClick={() => moveArmPose(2)}>
+          <Button
+            variant="outlined"
+            onClick={() => moveArmPose(ArmPose.CLOSE_BOX)}
+          >
             Close Box
           </Button>
         </Stack>
@@ -574,20 +595,30 @@ export default function ActionsPanel({
         <Typography variant="h6">Movement</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
-          <Button variant="outlined" onClick={() => moveToKid('kid1')}>
+          <Button
+            variant="outlined"
+            onClick={() => moveToPosition(Positions.KID1)}
+          >
             Go to Kid 1
           </Button>
-          <Button variant="outlined" onClick={() => moveToKid('kid2')}>
+          <Button
+            variant="outlined"
+            onClick={() => moveToPosition(Positions.KID2)}
+          >
             Go to Kid 2
           </Button>
-          <Button variant="outlined" color="warning" onClick={moveToOrigin}>
+          <Button
+            variant="outlined"
+            color="warning"
+            onClick={() => moveToPosition(Positions.ORIGIN)}
+          >
             Go to Origin
           </Button>
           <Typography variant="caption">Speed</Typography>
           <Slider
-            min={0.5}
-            max={3}
-            step={0.1}
+            min={0.1}
+            max={1}
+            step={0.05}
             value={moveSpeed}
             onChange={(_, v) => setMoveSpeed(Number(v))}
           />

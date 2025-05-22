@@ -77,3 +77,9 @@ Change the sound_id to play different sounds.
 `ros2 run tf2_ros static_transform_publisher 0 0 0 -1.5707963 0 -1.5707963 world_enu world`
 
 `ros2 launch optitrack_ros_py all.launch`
+
+## How to check arguments of an action
+
+`ros2 action list -t`
+`ros2 interface show robomaster_msg/action/GripperControl`
+`ros2 action send_goal /robomaster/gripper robomaster_msgs/action/GripperControl "{target_state: 2, power: 0.5}" --feedback`
