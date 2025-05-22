@@ -659,6 +659,8 @@ export default function ActionsPanel({
             variant="contained"
             color="error"
             onClick={publishPanicSignal}
+            size="large"
+            style={{ height: 200 }}
           >
             Panic
           </Button>
