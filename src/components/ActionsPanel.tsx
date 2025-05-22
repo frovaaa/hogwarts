@@ -69,25 +69,28 @@ export default function ActionsPanel({
     r: number,
     g: number,
     b: number,
-    a: number = 1.0
+    intensity: number = 1.0
   ) => {
     if (ros) {
-      console.log(`Publishing LED color: r=${r}, g=${g}, b=${b}, a=${a}`);
+      // Scale RGB by intensity, alpha always 1.0
+      const scaledR = r * intensity;
+      const scaledG = g * intensity;
+      const scaledB = b * intensity;
+      const msg = new ROSLIB.Message({
+        r: scaledR,
+        g: scaledG,
+        b: scaledB,
+        a: 1.0,
+      });
       const ledColorPublisher = new ROSLIB.Topic({
         ros,
         name: '/robomaster/leds/color',
         messageType: 'std_msgs/ColorRGBA',
       });
-
-      const msg = new ROSLIB.Message({
-        r,
-        g,
-        b,
-        a, // Intensity (1.0 for full intensity, 0.0 to turn off)
-      });
-
       ledColorPublisher.publish(msg);
-      console.log('LED color message published.');
+      console.log(
+        `Publishing LED color: r=${scaledR}, g=${scaledG}, b=${scaledB}, a=1.0`
+      );
     } else {
       console.error(
         'ROS connection is not available. Cannot publish LED color.'
@@ -191,7 +194,7 @@ export default function ActionsPanel({
           return;
         }
         if (count % 2 === 0) {
-          publishLedColor(r, g, b); // Turn on
+          publishLedColor(r, g, b, ledIntensity); // Turn on with intensity
         } else {
           publishLedColor(0.0, 0.0, 0.0, 0.0); // Turn off
         }
