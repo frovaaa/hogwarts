@@ -28,7 +28,8 @@ enum GripperState {
 // Enum for macro scenarios
 export enum MacroScenario {
   SHARE_LEGO = 'share_lego',
-  PASS_PIECE = 'pass_piece',
+  PASS_PIECE_KID1 = 'pass_piece_kid1',
+  PASS_PIECE_KID2 = 'pass_piece_kid2',
   ENCOURAGE_COLLAB = 'encourage_collab',
   PLAY_HAPPY_CHIME = 'play_happy_chime',
 }
@@ -368,7 +369,12 @@ export default function ActionsPanel({
         await moveArmPose(ArmPose.OPEN_BOX);
         playCustomSound(262);
         break;
-      case MacroScenario.PASS_PIECE:
+      case MacroScenario.PASS_PIECE_KID1:
+        await moveArmPose(ArmPose.CLOSE_BOX);
+        await moveToPosition(Positions.KID1);
+        await moveArmPose(ArmPose.OPEN_BOX);
+        break;
+      case MacroScenario.PASS_PIECE_KID2:
         await moveArmPose(ArmPose.CLOSE_BOX);
         await moveToPosition(Positions.KID2);
         await moveArmPose(ArmPose.OPEN_BOX);
@@ -600,13 +606,19 @@ export default function ActionsPanel({
             variant="outlined"
             onClick={() => handleMacro(MacroScenario.SHARE_LEGO)}
           >
-            Share LEGO
+            Ask to Share LEGO
           </Button>
           <Button
             variant="outlined"
-            onClick={() => handleMacro(MacroScenario.PASS_PIECE)}
+            onClick={() => handleMacro(MacroScenario.PASS_PIECE_KID1)}
           >
-            Pass Piece to Other Child
+            Pass Piece to Kid 1
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => handleMacro(MacroScenario.PASS_PIECE_KID2)}
+          >
+            Pass Piece to Kid 2
           </Button>
           <Button
             variant="outlined"
