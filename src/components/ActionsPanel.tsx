@@ -1,4 +1,4 @@
-import { Box, Button } from '@mui/material';
+import { Box, Button, Typography, Divider, Slider, Stack } from '@mui/material';
 import ROSLIB from 'roslib';
 import { useState } from 'react';
 
@@ -17,6 +17,14 @@ export default function ActionsPanel({
   onActionResult,
 }: ActionsPanelProps) {
   const [isActionInProgress, setIsActionInProgress] = useState(false);
+  // --- New state for LED intensity and blink ---
+  const [ledIntensity, setLedIntensity] = useState(1.0);
+  const [ledBlinkTimes, setLedBlinkTimes] = useState(5);
+  const [ledBlinkSpeed, setLedBlinkSpeed] = useState(100);
+  // --- New state for feedback intensity ---
+  const [feedbackLevel, setFeedbackLevel] = useState(1);
+  // --- New state for movement speed ---
+  const [moveSpeed, setMoveSpeed] = useState(1.5);
 
   const publishLedColor = (
     r: number,
@@ -354,88 +362,251 @@ export default function ActionsPanel({
     }
   };
 
+  // --- Gripper control ---
+  const handleGripper = async (open: boolean) => {
+    const actionName = '/robomaster/gripper_action';
+    const actionType = 'robomaster_hri_msgs/action/GripperAction';
+    const goal = { open };
+    await callGenericAction(actionName, actionType, goal);
+  };
+
+  // --- Macro scenario actions ---
+  const handleMacro = async (macro: string) => {
+    if (macro === 'share_lego') {
+      // Example: open box, play sound, move arm, etc.
+      await moveArmPose(4); // Open box
+      playSound();
+    } else if (macro === 'pass_piece') {
+      await moveArmPose(2); // Close box
+      await moveToKid('kid2');
+      await moveArmPose(4); // Open box
+    } else if (macro === 'encourage_collab') {
+      ledFeedback('good', 8, 80);
+      rotateOnSpot(2, 2.5);
+      playSound();
+    }
+  };
+
+  // --- Feedback with intensity ---
+  const handlePositiveFeedback = () => {
+    // Level 1: green blink, Level 2: green blink + sound, Level 3: green blink + sound + spin
+    if (feedbackLevel === 1) {
+      ledFeedback('good', 4, 120);
+    } else if (feedbackLevel === 2) {
+      ledFeedback('good', 6, 80);
+      playSound();
+    } else {
+      ledFeedback('good', 8, 60);
+      playSound();
+      rotateOnSpot(2, 2.5);
+    }
+  };
+  const handleNegativeFeedback = () => {
+    // Level 1: red blink, Level 2: red blink + stop, Level 3: red blink + move away
+    if (feedbackLevel === 1) {
+      ledFeedback('bad', 2, 120);
+    } else if (feedbackLevel === 2) {
+      ledFeedback('bad', 4, 80);
+      moveToOrigin();
+    } else {
+      ledFeedback('bad', 6, 60);
+      moveToOrigin();
+    }
+  };
+
   return (
-    <>
-      <Box mt={2} mb={5} display="flex" justifyContent="center" gap={2}>
-        <Button
-          variant="contained"
-          color="primary"
-          style={{
-            fontSize: '1.5rem',
-            height: '10rem',
-          }}
-          onClick={() => moveToKid('kid1')}
-          disabled={isActionInProgress} // Disable if action is in progress
-        >
-          Go to Kid 1
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          style={{
-            fontSize: '1.5rem',
-            height: '10rem',
-          }}
-          onClick={() => moveToKid('kid2')}
-          disabled={isActionInProgress} // Disable if action is in progress
-        >
-          Go to Kid 2
-        </Button>
-        <Button
-          variant="contained"
-          color="warning"
-          style={{
-            fontSize: '1.5rem',
-            height: '10rem',
-          }}
-          onClick={moveToOrigin}
-          disabled={isActionInProgress} // Disable if action is in progress
-        >
-          Go to Origin
-        </Button>
+    <Box
+      display="flex"
+      flexDirection="row"
+      gap={4}
+      justifyContent="center"
+      alignItems="flex-start"
+      mt={2}
+    >
+      {/* LEDs Section */}
+      <Box minWidth={220}>
+        <Typography variant="h6">LEDs</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Stack spacing={1}>
+          <Button
+            variant="outlined"
+            onClick={() => publishLedColor(1, 0, 0, ledIntensity)}
+          >
+            Red
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => publishLedColor(0, 1, 0, ledIntensity)}
+          >
+            Green
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => publishLedColor(0, 0, 1, ledIntensity)}
+          >
+            Blue
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => publishLedColor(0, 0, 0, 0)}
+          >
+            Off
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => ledFeedback('good', ledBlinkTimes, ledBlinkSpeed)}
+          >
+            Blink Green
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => ledFeedback('bad', ledBlinkTimes, ledBlinkSpeed)}
+          >
+            Blink Red
+          </Button>
+          <Typography variant="caption">Intensity</Typography>
+          <Slider
+            min={0}
+            max={1}
+            step={0.05}
+            value={ledIntensity}
+            onChange={(_, v) => setLedIntensity(Number(v))}
+          />
+          <Typography variant="caption">Blink Times</Typography>
+          <Slider
+            min={1}
+            max={10}
+            step={1}
+            value={ledBlinkTimes}
+            onChange={(_, v) => setLedBlinkTimes(Number(v))}
+          />
+          <Typography variant="caption">Blink Speed (ms)</Typography>
+          <Slider
+            min={50}
+            max={500}
+            step={10}
+            value={ledBlinkSpeed}
+            onChange={(_, v) => setLedBlinkSpeed(Number(v))}
+          />
+        </Stack>
       </Box>
-      <Box mt={0} display="flex" justifyContent="center" gap={2}>
-        <Button
-          variant="contained"
-          color="error"
-          style={{
-            fontSize: '1.5rem',
-            height: '10rem',
-          }}
-          onClick={markBadBehaviorWithAllActions}
-          disabled={isActionInProgress} // Disable if action is in progress
-        >
-          Mark Bad Behavior
-        </Button>
+      {/* Gripper Section */}
+      <Box minWidth={180}>
+        <Typography variant="h6">Gripper</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Stack spacing={1}>
+          <Button variant="outlined" onClick={() => handleGripper(true)}>
+            Open Gripper
+          </Button>
+          <Button variant="outlined" onClick={() => handleGripper(false)}>
+            Close Gripper
+          </Button>
+        </Stack>
       </Box>
-      <Box mt={2} display="flex" justifyContent="center" gap={2}>
-        <Button
-          variant="contained"
-          color="primary"
-          style={{ fontSize: '1.5rem', height: '10rem' }}
-          onClick={() => moveArmPose(2)}
-        >
-          Move Arm | Close Box
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          style={{ fontSize: '1.5rem', height: '10rem' }}
-          onClick={() => moveArmPose(4)}
-        >
-          Move Arm | Open Box
-        </Button>
+      {/* Arm/Box Section */}
+      <Box minWidth={200}>
+        <Typography variant="h6">Arm / Box</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Stack spacing={1}>
+          <Button variant="outlined" onClick={() => moveArmPose(4)}>
+            Open Box
+          </Button>
+          <Button variant="outlined" onClick={() => moveArmPose(2)}>
+            Close Box
+          </Button>
+        </Stack>
       </Box>
-      <Box mt={2} display="flex" justifyContent="center" gap={2}>
-        <Button
-          variant="contained"
-          color="error"
-          style={{ fontSize: '1.5rem', height: '10rem' }}
-          onClick={publishPanicSignal}
-        >
-          Panic Button
-        </Button>
+      {/* Feedback Section */}
+      <Box minWidth={220}>
+        <Typography variant="h6">Feedback</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Stack spacing={1}>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handlePositiveFeedback}
+          >
+            Positive Feedback
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleNegativeFeedback}
+          >
+            Negative Feedback
+          </Button>
+          <Typography variant="caption">Feedback Intensity</Typography>
+          <Slider
+            min={1}
+            max={3}
+            step={1}
+            value={feedbackLevel}
+            onChange={(_, v) => setFeedbackLevel(Number(v))}
+            marks={[
+              { value: 1, label: '1' },
+              { value: 2, label: '2' },
+              { value: 3, label: '3' },
+            ]}
+          />
+        </Stack>
       </Box>
-    </>
+      {/* Macro Scenarios Section */}
+      <Box minWidth={220}>
+        <Typography variant="h6">Macro Scenarios</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Stack spacing={1}>
+          <Button variant="outlined" onClick={() => handleMacro('share_lego')}>
+            Share LEGO
+          </Button>
+          <Button variant="outlined" onClick={() => handleMacro('pass_piece')}>
+            Pass Piece to Other Child
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => handleMacro('encourage_collab')}
+          >
+            Encourage Collaboration
+          </Button>
+        </Stack>
+      </Box>
+      {/* Movement Section */}
+      <Box minWidth={200}>
+        <Typography variant="h6">Movement</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Stack spacing={1}>
+          <Button variant="outlined" onClick={() => moveToKid('kid1')}>
+            Go to Kid 1
+          </Button>
+          <Button variant="outlined" onClick={() => moveToKid('kid2')}>
+            Go to Kid 2
+          </Button>
+          <Button variant="outlined" color="warning" onClick={moveToOrigin}>
+            Go to Origin
+          </Button>
+          <Typography variant="caption">Speed</Typography>
+          <Slider
+            min={0.5}
+            max={3}
+            step={0.1}
+            value={moveSpeed}
+            onChange={(_, v) => setMoveSpeed(Number(v))}
+          />
+        </Stack>
+      </Box>
+      {/* Panic Button Section */}
+      <Box minWidth={120}>
+        <Typography variant="h6">Other</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Stack spacing={1}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={publishPanicSignal}
+          >
+            Panic
+          </Button>
+        </Stack>
+      </Box>
+    </Box>
   );
 }
