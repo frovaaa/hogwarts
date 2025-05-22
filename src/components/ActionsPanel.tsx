@@ -25,6 +25,14 @@ enum GripperState {
   CLOSE = 2,
 }
 
+// Enum for macro scenarios
+export enum MacroScenario {
+  SHARE_LEGO = 'share_lego',
+  PASS_PIECE = 'pass_piece',
+  ENCOURAGE_COLLAB = 'encourage_collab',
+  PLAY_HAPPY_CHIME = 'play_happy_chime',
+}
+
 // Position interface and named positions
 export interface Position {
   x: number;
@@ -264,48 +272,32 @@ export default function ActionsPanel({
     }, 200); // 200ms per tick
   };
 
-  const playSound = () => {
+  // --- Sound Section ---
+  const playCustomSound = (sound_id: number = 262) => {
     if (!ros) {
       console.error('ROS connection is not available. Cannot play sound.');
       return;
     }
-
-    console.log('Playing sound...');
     const soundTopic = new ROSLIB.Topic({
       ros,
       name: '/robomaster/cmd_sound',
       messageType: 'robomaster_msgs/msg/SpeakerCommand',
     });
-
-    // Function to play and stop sound
-    const playAndStopSound = (times: number) => {
-      if (times <= 0) return;
-
-      // Publish the "start sound" message
+    soundTopic.publish(
+      new ROSLIB.Message({
+        control: 1,
+        sound_id,
+        times: 1,
+      })
+    );
+    setTimeout(() => {
       soundTopic.publish(
         new ROSLIB.Message({
-          control: 1,
-          sound_id: 262,
-          times: 1,
+          control: 0,
+          sound_id,
         })
       );
-
-      // Delay and publish the "stop sound" message
-      setTimeout(() => {
-        soundTopic.publish(
-          new ROSLIB.Message({
-            control: 0,
-            sound_id: 262,
-          })
-        );
-
-        // Recursively play and stop sound again
-        setTimeout(() => playAndStopSound(times - 1), 100);
-      }, 500);
-    };
-
-    // Play and stop sound twice
-    playAndStopSound(2);
+    }, 500);
   };
 
   const moveArmPose = async (poseType: ArmPose) => {
@@ -356,20 +348,41 @@ export default function ActionsPanel({
     await callGenericAction(actionName, actionType, goal);
   };
 
+  const happyChimeSong = async () => {
+    playCustomSound(263);
+    setTimeout(() => playCustomSound(264), 200);
+    setTimeout(() => playCustomSound(265), 300);
+    setTimeout(() => playCustomSound(262), 400);
+    setTimeout(() => playCustomSound(263), 500);
+    setTimeout(() => playCustomSound(264), 600);
+    setTimeout(() => playCustomSound(265), 700);
+  };
+
   // --- Macro scenario actions ---
-  const handleMacro = async (macro: string) => {
-    if (macro === 'share_lego') {
-      // Example: open box, play sound, move arm, etc.
-      await moveArmPose(ArmPose.OPEN_BOX); // Open box
-      playSound();
-    } else if (macro === 'pass_piece') {
-      await moveArmPose(ArmPose.CLOSE_BOX); // Close box
-      await moveToPosition(Positions.KID2); // Move to Kid 2
-      await moveArmPose(ArmPose.OPEN_BOX); // Open box
-    } else if (macro === 'encourage_collab') {
-      ledFeedback('good', 8, 80);
-      rotateOnSpot(2, 2.5);
-      playSound();
+  const handleMacro = async (macro: MacroScenario) => {
+    switch (macro) {
+      case MacroScenario.SHARE_LEGO:
+        await moveArmPose(ArmPose.OPEN_BOX);
+        playCustomSound(262);
+        break;
+      case MacroScenario.PASS_PIECE:
+        await moveArmPose(ArmPose.CLOSE_BOX);
+        await moveToPosition(Positions.KID2);
+        await moveArmPose(ArmPose.OPEN_BOX);
+        break;
+      case MacroScenario.ENCOURAGE_COLLAB:
+        ledFeedback('good', 8, 80);
+        rotateOnSpot(2, 2.5);
+        playCustomSound(262);
+        break;
+      case MacroScenario.PLAY_HAPPY_CHIME:
+        // Blink green LED
+        ledFeedback('good', 4, 120);
+        // Play happy chime
+        happyChimeSong();
+        break;
+      default:
+        break;
     }
   };
 
@@ -380,10 +393,14 @@ export default function ActionsPanel({
       ledFeedback('good', 4, 120);
     } else if (feedbackLevel === 2) {
       ledFeedback('good', 6, 80);
-      playSound();
+      for (let i = 0; i < 3; i++)
+        setTimeout(() => playCustomSound(262), i * 600);
     } else {
       ledFeedback('good', 8, 60);
-      playSound();
+      // for (let i = 0; i < 3; i++)
+      //   setTimeout(() => playCustomSound(262), i * 600);
+      happyChimeSong();
+
       rotateOnSpot(2, 2.5);
     }
   };
@@ -576,15 +593,21 @@ export default function ActionsPanel({
         <Typography variant="h6">Macro Scenarios</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
-          <Button variant="outlined" onClick={() => handleMacro('share_lego')}>
+          <Button
+            variant="outlined"
+            onClick={() => handleMacro(MacroScenario.SHARE_LEGO)}
+          >
             Share LEGO
           </Button>
-          <Button variant="outlined" onClick={() => handleMacro('pass_piece')}>
+          <Button
+            variant="outlined"
+            onClick={() => handleMacro(MacroScenario.PASS_PIECE)}
+          >
             Pass Piece to Other Child
           </Button>
           <Button
             variant="outlined"
-            onClick={() => handleMacro('encourage_collab')}
+            onClick={() => handleMacro(MacroScenario.ENCOURAGE_COLLAB)}
           >
             Encourage Collaboration
           </Button>
@@ -635,6 +658,28 @@ export default function ActionsPanel({
             onClick={publishPanicSignal}
           >
             Panic
+          </Button>
+        </Stack>
+      </Box>
+      {/* Sound Section */}
+      <Box minWidth={180}>
+        <Typography variant="h6">Sounds</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Stack spacing={1}>
+          <Button variant="outlined" onClick={() => playCustomSound(262)}>
+            Beep
+          </Button>
+          <Button variant="outlined" onClick={() => playCustomSound(263)}>
+            Chime
+          </Button>
+          <Button variant="outlined" onClick={() => playCustomSound(264)}>
+            Melody
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => handleMacro(MacroScenario.PLAY_HAPPY_CHIME)}
+          >
+            Happy Chime
           </Button>
         </Stack>
       </Box>
