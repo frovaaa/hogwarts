@@ -483,6 +483,30 @@ export default function ActionsPanel({
           </Button>
           <Button
             variant="outlined"
+            onClick={() => publishLedColor(1, 0.2, 0.0, ledIntensity)}
+          >
+            Orange
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => publishLedColor(0.21, 0.27, 0.31, ledIntensity)}
+          >
+            Gray
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => publishLedColor(1, 1, 1, ledIntensity)}
+          >
+            White
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => publishLedColor(1, 1, 0, ledIntensity)}
+          >
+            Yellow
+          </Button>
+          <Button
+            variant="outlined"
             onClick={() => publishLedColor(0, 0, 0, 0)}
           >
             Off
