@@ -23,6 +23,7 @@ import {
 interface ExperimentControlProps {
   manualIp: string;
   onSessionChange?: (sessionId: string | null) => void;
+  exportLogsAsJsonl?: () => string;
 }
 
 interface BagStatus {
@@ -42,6 +43,7 @@ interface LogFile {
 export default function ExperimentControl({
   manualIp,
   onSessionChange,
+  exportLogsAsJsonl,
 }: ExperimentControlProps) {
   const [sessionName, setSessionName] = useState('');
   const [currentSession, setCurrentSession] = useState<string | null>(null);
@@ -126,6 +128,31 @@ export default function ExperimentControl({
     setError(null);
 
     try {
+      // Save experiment logs if available
+      if (exportLogsAsJsonl && currentSession) {
+        try {
+          const logsJsonl = exportLogsAsJsonl();
+          if (logsJsonl.trim()) {
+            const saveResponse = await fetch(`http://${manualIp}:4000/experiment/logs/save`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionId: currentSession,
+                logs: logsJsonl,
+              }),
+            });
+
+            if (!saveResponse.ok) {
+              console.warn('Failed to save experiment logs, but continuing...');
+            } else {
+              console.log('Experiment logs saved successfully');
+            }
+          }
+        } catch (logError) {
+          console.warn('Error saving experiment logs:', logError);
+        }
+      }
+
       // Stop ROS2 bag recording
       const bagResponse = await fetch(`http://${manualIp}:4000/bag/stop`, {
         method: 'POST',

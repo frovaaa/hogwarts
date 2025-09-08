@@ -81,6 +81,8 @@ export default function ActionsPanel({
     logGripperEvent,
     logMacroEvent,
     logSystemEvent,
+    exportLogsAsJsonl,
+    clearLogs,
   } = useExperimentLogger(ros, sessionId);
 
   const publishLedColor = (
@@ -648,9 +650,14 @@ export default function ActionsPanel({
         <ExperimentControl
           manualIp={manualIp}
           onSessionChange={(sessionId) => {
+            // Clear logs when starting a new session
+            if (sessionId) {
+              clearLogs();
+            }
             // Pass the session change up to the parent component
             onSessionChange?.(sessionId);
           }}
+          exportLogsAsJsonl={exportLogsAsJsonl}
         />
       </Box>
       
