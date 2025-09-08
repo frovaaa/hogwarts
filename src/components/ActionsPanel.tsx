@@ -1,6 +1,7 @@
 import { Box, Button, Typography, Divider, Slider, Stack } from '@mui/material';
 import ROSLIB from 'roslib';
 import { useState } from 'react';
+import { useExperimentLogger } from '../hooks/useExperimentLogger';
 
 interface ActionsPanelProps {
   ros: ROSLIB.Ros | null; // Updated to use ROSLIB.Ros type and allow null
@@ -66,6 +67,17 @@ export default function ActionsPanel({
   // --- New state for feedback intensity ---
   const [feedbackLevel, setFeedbackLevel] = useState(1);
 
+  // Initialize experiment logger
+  const {
+    logMovementEvent,
+    logArmEvent,
+    logLedEvent,
+    logSoundEvent,
+    logGripperEvent,
+    logMacroEvent,
+    logSystemEvent,
+  } = useExperimentLogger(ros);
+
   const publishLedColor = (
     r: number,
     g: number,
@@ -92,11 +104,33 @@ export default function ActionsPanel({
       console.log(
         `Publishing LED color: r=${scaledR}, g=${scaledG}, b=${scaledB}, a=1.0`
       );
+
+      // Log the event
+      logLedEvent('set_color', {
+        r: scaledR,
+        g: scaledG,
+        b: scaledB,
+        intensity: intensity,
+        color_name: getColorName(r, g, b)
+      });
     } else {
       console.error(
         'ROS connection is not available. Cannot publish LED color.'
       );
     }
+  };
+
+  // Helper function to get color name for logging
+  const getColorName = (r: number, g: number, b: number): string => {
+    if (r === 1 && g === 0 && b === 0) return 'red';
+    if (r === 0 && g === 1 && b === 0) return 'green';
+    if (r === 0 && g === 0 && b === 1) return 'blue';
+    if (r === 1 && g === 0.2 && b === 0) return 'orange';
+    if (r === 0.21 && g === 0.27 && b === 0.31) return 'gray';
+    if (r === 1 && g === 1 && b === 1) return 'white';
+    if (r === 1 && g === 1 && b === 0) return 'yellow';
+    if (r === 0 && g === 0 && b === 0) return 'off';
+    return `custom_rgb(${r},${g},${b})`;
   };
 
   const callGenericAction = async (
@@ -110,6 +144,16 @@ export default function ActionsPanel({
     );
     setIsActionInProgress(true); // Disable buttons
     // onActionResult?.({ success: null, message: `Executing ${actionName}...` }); // Notify intermediate state
+
+    // Log the generic action before execution
+    const actionCategory = getActionCategory(actionName);
+    const eventLogger = getEventLogger(actionCategory);
+    eventLogger('generic_action', {
+      action_name: actionName,
+      action_type: actionType,
+      goal: goal
+    });
+
     try {
       const response = await fetch(`http://${manualIp}:4000/generic-action`, {
         method: 'POST',
@@ -133,6 +177,15 @@ export default function ActionsPanel({
           success: false,
           message: `Failed to execute ${actionName}.`,
         }); // Notify failure
+
+        // Log the failure
+        eventLogger('generic_action_failed', {
+          action_name: actionName,
+          action_type: actionType,
+          goal: goal,
+          error: errorText,
+          status: response.status
+        });
         return;
       }
 
@@ -145,6 +198,15 @@ export default function ActionsPanel({
             ? `${actionName} executed successfully.`
             : `Failed to execute ${actionName}.`,
       }); // Notify success or failure based on result.success
+
+      // Log the success/failure result
+      eventLogger('generic_action_completed', {
+        action_name: actionName,
+        action_type: actionType,
+        goal: goal,
+        result: result,
+        success: result.result.success === true || result.status == 4
+      });
     } catch (err) {
       console.error(
         `API call error for action ${actionName} (${actionType}):`,
@@ -154,8 +216,38 @@ export default function ActionsPanel({
         success: false,
         message: `Error executing ${actionName}.`,
       }); // Notify failure
+
+      // Log the error
+      eventLogger('generic_action_error', {
+        action_name: actionName,
+        action_type: actionType,
+        goal: goal,
+        error: err instanceof Error ? err.message : String(err)
+      });
     } finally {
       setIsActionInProgress(false); // Re-enable buttons
+    }
+  };
+
+  // Helper to determine action category for logging
+  const getActionCategory = (actionName: string): string => {
+    if (actionName.includes('move_robot') || actionName.includes('move')) return 'movement';
+    if (actionName.includes('arm')) return 'arm';
+    if (actionName.includes('gripper')) return 'gripper';
+    if (actionName.includes('led')) return 'led';
+    if (actionName.includes('sound')) return 'sound';
+    return 'system';
+  };
+
+  // Helper to get the right event logger based on category
+  const getEventLogger = (category: string) => {
+    switch (category) {
+      case 'movement': return logMovementEvent;
+      case 'arm': return logArmEvent;
+      case 'gripper': return logGripperEvent;
+      case 'led': return logLedEvent;
+      case 'sound': return logSoundEvent;
+      default: return logSystemEvent;
     }
   };
 
@@ -181,6 +273,14 @@ export default function ActionsPanel({
     times: number = 5, // Default to 5 times if not specified
     speed: number = 100 // Default to 100ms interval if not specified
   ) => {
+    // Log the LED feedback event
+    logLedEvent('feedback_blink', {
+      behavior: behavior,
+      times: times,
+      speed: speed,
+      intensity: ledIntensity
+    });
+
     const blinkLed = (
       r: number,
       g: number,
@@ -225,6 +325,12 @@ export default function ActionsPanel({
     }
 
     setIsActionInProgress(true); // Disable buttons
+
+    // Log the rotation event
+    logMovementEvent('rotate_on_spot', {
+      cycles: cycles,
+      angular_speed: angularSpeed
+    });
 
     console.log(`Rotating on the spot for ${cycles} cycles…`);
     const cmdVelTopic = new ROSLIB.Topic({
@@ -282,6 +388,13 @@ export default function ActionsPanel({
       console.error('ROS connection is not available. Cannot play sound.');
       return;
     }
+
+    // Log the sound event
+    logSoundEvent('play_sound', {
+      sound_id: sound_id,
+      sound_name: getSoundName(sound_id)
+    });
+
     const soundTopic = new ROSLIB.Topic({
       ros,
       name: '/robomaster/cmd_sound',
@@ -304,6 +417,17 @@ export default function ActionsPanel({
     }, 500);
   };
 
+  // Helper function to get sound name for logging
+  const getSoundName = (soundId: number): string => {
+    switch (soundId) {
+      case 262: return 'beep';
+      case 263: return 'chime';
+      case 264: return 'melody';
+      case 265: return 'note';
+      default: return `custom_sound_${soundId}`;
+    }
+  };
+
   const moveArmPose = async (poseType: ArmPose) => {
     const actionName = '/robomaster/move_arm_pose';
     const actionType = 'robomaster_hri_msgs/action/MoveArmPose';
@@ -314,6 +438,12 @@ export default function ActionsPanel({
 
   const publishPanicSignal = () => {
     if (ros) {
+      // Log the panic event
+      logSystemEvent('panic_signal', {
+        repeat_count: 5,
+        interval_ms: 100
+      });
+
       console.log('Publishing panic signal to /robomaster/panic 5 times');
       const panicPublisher = new ROSLIB.Topic({
         ros,
@@ -353,6 +483,12 @@ export default function ActionsPanel({
   };
 
   const happyChimeSong = async () => {
+    // Log the complex sound event
+    logSoundEvent('happy_chime_sequence', {
+      sequence: [263, 264, 265, 262, 263, 264, 265],
+      timing: 'sequential with delays'
+    });
+
     playCustomSound(263);
     setTimeout(() => playCustomSound(264), 200);
     setTimeout(() => playCustomSound(265), 300);
@@ -364,6 +500,12 @@ export default function ActionsPanel({
 
   // --- Macro scenario actions ---
   const handleMacro = async (macro: MacroScenario) => {
+    // Log the macro event
+    logMacroEvent('execute_macro', {
+      macro_name: macro,
+      macro_type: macro
+    });
+
     switch (macro) {
       case MacroScenario.SHARE_LEGO:
         await moveArmPose(ArmPose.OPEN_BOX);
@@ -397,6 +539,12 @@ export default function ActionsPanel({
 
   // --- Feedback with intensity ---
   const handlePositiveFeedback = () => {
+    // Log the positive feedback event
+    logSystemEvent('positive_feedback', {
+      feedback_level: feedbackLevel,
+      actions_triggered: getFeedbackActions(feedbackLevel, 'positive')
+    });
+
     // Level 1: green blink, Level 2: green blink + sound, Level 3: green blink + sound + spin
     if (feedbackLevel === 1) {
       ledFeedback('good', 4, 120);
@@ -418,6 +566,13 @@ export default function ActionsPanel({
       console.error('ROS connection is not available. Cannot move back.');
       return;
     }
+
+    // Log the move back event
+    logMovementEvent('move_backward', {
+      distance: distance,
+      duration: duration
+    });
+
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
       name: '/robomaster/cmd_vel',
@@ -437,6 +592,12 @@ export default function ActionsPanel({
     }, duration);
   };
   const handleNegativeFeedback = () => {
+    // Log the negative feedback event
+    logSystemEvent('negative_feedback', {
+      feedback_level: feedbackLevel,
+      actions_triggered: getFeedbackActions(feedbackLevel, 'negative')
+    });
+
     // Level 1: red blink, Level 2: red blink + back, Level 3: red blink + more back
     if (feedbackLevel === 1) {
       ledFeedback('bad', 2, 120);
@@ -446,6 +607,25 @@ export default function ActionsPanel({
     } else {
       ledFeedback('bad', 6, 60);
       moveBack(-0.4, 500); // Go further back and for longer
+    }
+  };
+
+  // Helper function to describe feedback actions
+  const getFeedbackActions = (level: number, type: 'positive' | 'negative'): string[] => {
+    if (type === 'positive') {
+      switch (level) {
+        case 1: return ['led_blink_green_4x'];
+        case 2: return ['led_blink_green_6x', 'sound_beep_3x'];
+        case 3: return ['led_blink_green_8x', 'happy_chime_sequence', 'rotate_2_cycles'];
+        default: return ['unknown'];
+      }
+    } else {
+      switch (level) {
+        case 1: return ['led_blink_red_2x'];
+        case 2: return ['led_blink_red_4x', 'move_back_0.2m'];
+        case 3: return ['led_blink_red_6x', 'move_back_0.4m'];
+        default: return ['unknown'];
+      }
     }
   };
 

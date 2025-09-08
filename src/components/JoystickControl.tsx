@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import ROSLIB, { Ros } from 'roslib';
+import { useExperimentLogger } from '../hooks/useExperimentLogger';
 
 interface JoystickControlProps {
   ros: Ros | null;
@@ -12,6 +13,10 @@ export default function JoystickControl({
   ros,
   moveSpeed,
 }: JoystickControlProps) {
+  const { logMovementEvent } = useExperimentLogger(ros);
+  const lastLogTime = useRef(0);
+  const logThrottleMs = 500; // Log joystick movements at most every 500ms
+
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let manager: any;
@@ -35,6 +40,14 @@ export default function JoystickControl({
           });
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          manager.on('start', () => {
+            // Log when joystick control starts
+            logMovementEvent('joystick_start', {
+              move_speed: moveSpeed
+            });
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           manager.on('move', (evt: any, data: any) => {
             if (data && data.vector) {
               const speedFactor = moveSpeed; // Use moveSpeed from props
@@ -47,6 +60,18 @@ export default function JoystickControl({
               });
 
               cmdVelTopic.publish(twist);
+
+              // Throttle logging of joystick movements to avoid spam
+              const now = Date.now();
+              if (now - lastLogTime.current > logThrottleMs) {
+                logMovementEvent('joystick_move', {
+                  linear_x: linearX,
+                  angular_z: angularZ,
+                  speed_factor: speedFactor,
+                  vector: data.vector
+                });
+                lastLogTime.current = now;
+              }
             }
           });
 
@@ -57,6 +82,11 @@ export default function JoystickControl({
               angular: { x: 0, y: 0, z: 0 },
             });
             cmdVelTopic.publish(stopTwist);
+
+            // Log when joystick control ends
+            logMovementEvent('joystick_end', {
+              move_speed: moveSpeed
+            });
           });
         });
       }
