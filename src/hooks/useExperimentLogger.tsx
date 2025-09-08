@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import ROSLIB from 'roslib';
 
 interface ExperimentEvent {
@@ -9,44 +9,73 @@ interface ExperimentEvent {
   action: string;
   details: Record<string, unknown>;
   operator_id?: string;
+  session_id?: string;
 }
 
-export const useExperimentLogger = (ros: ROSLIB.Ros | null) => {
+export const useExperimentLogger = (ros: ROSLIB.Ros | null, sessionId?: string | null) => {
+  const logsRef = useRef<ExperimentEvent[]>([]);
+
   const logEvent = useCallback((
     eventType: string,
     action: string,
     details: Record<string, unknown> = {},
     operatorId?: string
   ) => {
-    if (!ros) {
-      console.warn('ROS connection not available. Cannot log experiment event.');
-      return;
-    }
-
     const experimentEvent: ExperimentEvent = {
       timestamp: new Date().toISOString(),
       event_type: eventType,
       action: action,
       details: details,
-      ...(operatorId && { operator_id: operatorId })
+      ...(operatorId && { operator_id: operatorId }),
+      ...(sessionId && { session_id: sessionId })
     };
 
-    // Create the topic publisher
-    const experimentEventTopic = new ROSLIB.Topic({
-      ros,
-      name: '/experiment/event',
-      messageType: 'std_msgs/String', // Using String message to send JSON
-    });
+    // Store locally for potential JSONL export
+    logsRef.current.push(experimentEvent);
 
-    // Publish the event as JSON string
-    const message = new ROSLIB.Message({
-      data: JSON.stringify(experimentEvent),
-    });
+    // Publish to ROS topic
+    if (ros) {
+      const experimentEventTopic = new ROSLIB.Topic({
+        ros,
+        name: '/experiment/event',
+        messageType: 'std_msgs/String',
+      });
 
-    experimentEventTopic.publish(message);
-    
+      const message = new ROSLIB.Message({
+        data: JSON.stringify(experimentEvent),
+      });
+
+      experimentEventTopic.publish(message);
+    } else {
+      console.warn('ROS connection not available. Cannot log experiment event to topic.');
+    }
+
     console.log('Experiment event logged:', experimentEvent);
-  }, [ros]);
+  }, [ros, sessionId]);
+
+  // Export logs as JSONL
+  const exportLogsAsJsonl = useCallback((): string => {
+    return logsRef.current.map(log => JSON.stringify(log)).join('\n');
+  }, []);
+
+  // Download logs as JSONL file
+  const downloadLogsAsJsonl = useCallback((filename?: string) => {
+    const jsonlContent = exportLogsAsJsonl();
+    const blob = new Blob([jsonlContent], { type: 'application/jsonl' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || `experiment_logs_${new Date().toISOString().replace(/[:.]/g, '-')}.jsonl`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [exportLogsAsJsonl]);
+
+  // Clear logs (for new session)
+  const clearLogs = useCallback(() => {
+    logsRef.current = [];
+  }, []);
 
   // Helper functions for different types of events
   const logMovementEvent = useCallback((action: string, details: Record<string, unknown>) => {
@@ -86,5 +115,9 @@ export const useExperimentLogger = (ros: ROSLIB.Ros | null) => {
     logGripperEvent,
     logMacroEvent,
     logSystemEvent,
+    exportLogsAsJsonl,
+    downloadLogsAsJsonl,
+    clearLogs,
+    getLogCount: () => logsRef.current.length,
   };
 };

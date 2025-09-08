@@ -2,14 +2,17 @@ import { Box, Button, Typography, Divider, Slider, Stack } from '@mui/material';
 import ROSLIB from 'roslib';
 import { useState } from 'react';
 import { useExperimentLogger } from '../hooks/useExperimentLogger';
+import ExperimentControl from './ExperimentControl';
 
 interface ActionsPanelProps {
   ros: ROSLIB.Ros | null; // Updated to use ROSLIB.Ros type and allow null
   manualIp: string; // Added manualIp to props
+  sessionId?: string | null; // Added sessionId for experiment logging
   onActionResult?: (result: {
     success: boolean | null;
     message: string;
   }) => void; // Added callback for action result
+  onSessionChange?: (sessionId: string | null) => void; // Added callback for session changes
   moveSpeed: number;
   setMoveSpeed: (v: number) => void;
 }
@@ -52,7 +55,9 @@ export const Positions: Record<string, Position> = {
 export default function ActionsPanel({
   ros,
   manualIp,
+  sessionId,
   onActionResult,
+  onSessionChange,
   moveSpeed,
   setMoveSpeed,
 }: ActionsPanelProps) {
@@ -67,7 +72,7 @@ export default function ActionsPanel({
   // --- New state for feedback intensity ---
   const [feedbackLevel, setFeedbackLevel] = useState(1);
 
-  // Initialize experiment logger
+  // Initialize experiment logger with session ID
   const {
     logMovementEvent,
     logArmEvent,
@@ -76,7 +81,7 @@ export default function ActionsPanel({
     logGripperEvent,
     logMacroEvent,
     logSystemEvent,
-  } = useExperimentLogger(ros);
+  } = useExperimentLogger(ros, sessionId);
 
   const publishLedColor = (
     r: number,
@@ -638,6 +643,17 @@ export default function ActionsPanel({
       alignItems="flex-start"
       mt={2}
     >
+      {/* Experiment Control Section */}
+      <Box minWidth={220}>
+        <ExperimentControl
+          manualIp={manualIp}
+          onSessionChange={(sessionId) => {
+            // Pass the session change up to the parent component
+            onSessionChange?.(sessionId);
+          }}
+        />
+      </Box>
+      
       {/* LEDs Section */}
       <Box minWidth={220}>
         <Typography variant="h6">LEDs</Typography>

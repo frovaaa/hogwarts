@@ -31,6 +31,7 @@ export default function Homepage() {
   // const [topics, setTopics] = useState<string[]>([]);
   // const [error, setError] = useState<string | null>(null);
   const [manualIp, setManualIp] = useState<string>(rosIp);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [actionResult, setActionResult] = useState<{
     success: boolean | null;
     message: string;
@@ -59,6 +60,21 @@ export default function Homepage() {
     message: string;
   }) => {
     setActionResult(result);
+  };
+
+  const handleSessionChange = (sessionId: string | null) => {
+    setCurrentSessionId(sessionId);
+    if (sessionId) {
+      setActionResult({
+        success: true,
+        message: `Experiment session started: ${sessionId}`,
+      });
+    } else {
+      setActionResult({
+        success: true,
+        message: 'Experiment session ended',
+      });
+    }
   };
 
   return (
@@ -137,11 +153,24 @@ export default function Homepage() {
           </Grid> */}
           {/* <OptitrackData ros={ros} /> */}
           <Grid size={12}>
+            {/* Current Session Indicator */}
+            {currentSessionId && (
+              <Box mb={2}>
+                <Alert severity="info">
+                  <Typography variant="body2">
+                    <strong>Active Session:</strong> {currentSessionId}
+                  </Typography>
+                </Alert>
+              </Box>
+            )}
+
             {/* <CameraFeed ros={ros} /> */}
             <ActionsPanel
               ros={ros}
               manualIp={manualIp}
+              sessionId={currentSessionId}
               onActionResult={handleActionResult}
+              onSessionChange={handleSessionChange}
               moveSpeed={moveSpeed}
               setMoveSpeed={setMoveSpeed}
             />

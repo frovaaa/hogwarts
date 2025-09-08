@@ -1,13 +1,32 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
+// Create necessary directories
 const express = require('express');
 const rclnodejs = require('rclnodejs');
 const cors = require('cors');
+const { spawn } = require('child_process');
+const fs = require('fs');
+
+let node; // Global ROS 2 node reference
+let bagProcess = null;
+let currentBagPath = null; 
+
+const logsDir = './experiment_logs';
+const bagsDir = './experiment_bags';
+
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+  console.log('Created experiment_logs directory');
+}
+
+if (!fs.existsSync(bagsDir)) {
+  fs.mkdirSync(bagsDir, { recursive: true });
+  console.log('Created experiment_bags directory');
+}
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-let node; // Global ROS 2 node reference
 
 // ------------------------------------------------------
 // ROS 2 initialisation
@@ -110,11 +129,212 @@ app.post('/generic-action', async (req, res) => {
 });
 
 // ------------------------------------------------------
+// ROS2 Bag Recording Endpoints
+// ------------------------------------------------------
+
+// Start bag recording
+app.post('/bag/start', (req, res) => {
+  try {
+    if (bagProcess) {
+      return res.status(400).json({ error: 'Bag recording already in progress' });
+    }
+
+    const { topics, outputPath, sessionName } = req.body;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const bagPath = outputPath || `./experiment_bags/${sessionName || 'session'}_${timestamp}`;
+    
+    // Default topics to record
+    const topicsList = topics || [
+      '/robomaster/cmd_vel',
+      '/robomaster/cmd_wheels',
+      '/robomaster/cmd_arm',
+      '/robomaster/mov_arm_pose',
+      '/robomaster/gripper',
+      '/robomaster/leds/color',
+      '/robomaster/leds/effect',
+      '/robomaster/cmd_sound',
+      '/robomaster/panic',
+      '/robomaster/state',
+      '/robomaster/odom',
+      '/robomaster/joint_states',
+      '/robomaster/imu',
+      '/robomaster/battery',
+      '/rosout',
+      '/experiment/event'
+    ];
+    
+    console.log(`Starting bag recording to: ${bagPath}`);
+    console.log(`Recording topics: ${topicsList.join(', ')}`);
+    
+    // ros2 bag record -o output_path topic1 topic2 topic3
+    bagProcess = spawn('ros2', ['bag', 'record', '-o', bagPath, ...topicsList], {
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    currentBagPath = bagPath;
+
+    bagProcess.stdout.on('data', (data) => {
+      console.log(`[ros2 bag] ${data.toString().trim()}`);
+    });
+
+    bagProcess.stderr.on('data', (data) => {
+      console.error(`[ros2 bag error] ${data.toString().trim()}`);
+    });
+
+    bagProcess.on('error', (error) => {
+      console.error('Bag recording error:', error);
+      bagProcess = null;
+      currentBagPath = null;
+    });
+
+    bagProcess.on('close', (code) => {
+      console.log(`Bag recording process exited with code ${code}`);
+      bagProcess = null;
+      currentBagPath = null;
+    });
+
+    res.json({ 
+      success: true,
+      message: 'Bag recording started', 
+      path: bagPath,
+      topics: topicsList 
+    });
+  } catch (error) {
+    console.error('Error starting bag recording:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stop bag recording
+app.post('/bag/stop', (req, res) => {
+  try {
+    if (!bagProcess) {
+      return res.status(400).json({ error: 'No bag recording in progress' });
+    }
+
+    console.log('Stopping bag recording...');
+    bagProcess.kill('SIGINT'); // Graceful shutdown
+    
+    setTimeout(() => {
+      const stoppedPath = currentBagPath;
+      bagProcess = null;
+      currentBagPath = null;
+      
+      res.json({ 
+        success: true,
+        message: 'Bag recording stopped', 
+        path: stoppedPath 
+      });
+    }, 2000); // Give it time to save properly
+  } catch (error) {
+    console.error('Error stopping bag recording:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get bag recording status
+app.get('/bag/status', (req, res) => {
+  res.json({
+    recording: !!bagProcess,
+    path: currentBagPath,
+    pid: bagProcess ? bagProcess.pid : null
+  });
+});
+
+// ------------------------------------------------------
+// Experiment Log Management Endpoints
+// ------------------------------------------------------
+
+// Download experiment logs as JSONL
+app.get('/experiment/logs/download/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const filePath = `./experiment_logs/${sessionId}.jsonl`;
+  
+  res.download(filePath, `experiment_${sessionId}.jsonl`, (err) => {
+    if (err) {
+      console.error('Error downloading log file:', err);
+      res.status(404).json({ error: 'Log file not found' });
+    }
+  });
+});
+
+// Save experiment logs as JSONL
+app.post('/experiment/logs/save', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    const { sessionId, logs } = req.body;
+    
+    if (!sessionId || !logs) {
+      return res.status(400).json({ error: 'Missing sessionId or logs' });
+    }
+    
+    const logsDir = './experiment_logs';
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+    
+    const filePath = path.join(logsDir, `${sessionId}.jsonl`);
+    fs.writeFileSync(filePath, logs);
+    
+    res.json({ 
+      success: true, 
+      message: 'Logs saved successfully',
+      path: filePath 
+    });
+  } catch (error) {
+    console.error('Error saving log file:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// List available experiment log files
+app.get('/experiment/logs/list', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    const logsDir = './experiment_logs';
+    if (!fs.existsSync(logsDir)) {
+      return res.json({ files: [] });
+    }
+    
+    const files = fs.readdirSync(logsDir)
+      .filter(file => file.endsWith('.jsonl'))
+      .map(file => {
+        const filePath = path.join(logsDir, file);
+        const stats = fs.statSync(filePath);
+        return {
+          name: file,
+          sessionId: file.replace('.jsonl', ''),
+          created: stats.birthtime,
+          modified: stats.mtime,
+          size: stats.size
+        };
+      })
+      .sort((a, b) => new Date(b.created) - new Date(a.created));
+    
+    res.json({ files });
+  } catch (error) {
+    console.error('Error listing log files:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ------------------------------------------------------
 // Graceful shutdown
 // ------------------------------------------------------
 process.on('SIGINT', async () => {
   console.log('Shutting down …');
   try {
+    // Stop bag recording if running
+    if (bagProcess) {
+      console.log('Stopping bag recording before shutdown...');
+      bagProcess.kill('SIGINT');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
     if (node) node.destroy();
     await rclnodejs.shutdown();
   } finally {
