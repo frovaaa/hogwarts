@@ -358,10 +358,9 @@ export default function ExperimentControl({
                   <ListItemText
                     primary={file.sessionId}
                     secondary={
-                      <Stack direction="row" spacing={2}>
-                        <span>Created: {new Date(file.created).toLocaleString()}</span>
-                        <span>Size: {formatFileSize(file.size)}</span>
-                      </Stack>
+                      <span>
+                        Created: {new Date(file.created).toLocaleString()} • Size: {formatFileSize(file.size)}
+                      </span>
                     }
                   />
                 </ListItem>
