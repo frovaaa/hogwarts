@@ -159,6 +159,9 @@ app.post('/bag/start', (req, res) => {
       '/robomaster/joint_states',
       '/robomaster/imu',
       '/robomaster/battery',
+      '/robomaster/pose_world_ref',
+      '/tf',
+      '/tf_static',
       '/rosout',
       '/experiment/event'
     ];

@@ -1,6 +1,6 @@
-import { Box, Button, Typography, Divider, Slider, Stack } from '@mui/material';
+import { Box, Button, Typography, Divider, Slider, Stack, Card, CardContent } from '@mui/material';
 import ROSLIB from 'roslib';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useExperimentLogger } from '../hooks/useExperimentLogger';
 import ExperimentControl from './ExperimentControl';
 
@@ -46,6 +46,30 @@ export interface Position {
   label: string;
 }
 
+// Interface for TF data
+interface TFData {
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  orientation: {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+  };
+  timestamp: number;
+}
+
+// Interface for integrated position tracking
+interface IntegratedPosition {
+  x: number;
+  y: number;
+  theta: number; // yaw angle in radians
+  timestamp: number;
+}
+
 export const Positions: Record<string, Position> = {
   KID1: { x: 0.5, y: 0.5, theta: 0.0, label: 'kid1' },
   KID2: { x: 0.5, y: -0.5, theta: 0.0, label: 'kid2' },
@@ -71,6 +95,15 @@ export default function ActionsPanel({
   const [ledBlinkSpeed, setLedBlinkSpeed] = useState(100);
   // --- New state for feedback intensity ---
   const [feedbackLevel, setFeedbackLevel] = useState(1);
+  // --- New state for TF monitoring ---
+  const [tfData, setTfData] = useState<TFData | null>(null);
+  const [tfConnected, setTfConnected] = useState(false);
+  // --- New state for integrated position tracking ---
+  const [integratedPosition, setIntegratedPosition] = useState<IntegratedPosition>({
+    x: 0, y: 0, theta: 0, timestamp: Date.now()
+  });
+  const [cmdVelSubscribed, setCmdVelSubscribed] = useState(false);
+  const [lastOdomPosition, setLastOdomPosition] = useState<{x: number; y: number} | null>(null);
 
   // Initialize experiment logger with session ID
   const {
@@ -84,6 +117,177 @@ export default function ActionsPanel({
     exportLogsAsJsonl,
     clearLogs,
   } = useExperimentLogger(ros, sessionId);
+
+  // TF listener effect
+  useEffect(() => {
+    if (!ros) {
+      console.log('ROS connection is null/undefined');
+      setTfConnected(false);
+      return;
+    }
+
+    console.log('Setting up TF subscription, ROS connected:', ros.isConnected);
+
+    // Subscribe directly to /tf topic instead of using TFClient
+    const tfTopic = new ROSLIB.Topic({
+      ros: ros,
+      name: '/tf',
+      messageType: 'tf2_msgs/TFMessage'
+    });
+
+    tfTopic.subscribe((message: any) => {
+      console.log('Received /tf message:', message); // Debug log
+      
+      // Look for the robomaster/base_link transform
+      if (message.transforms && Array.isArray(message.transforms)) {
+        const baseLinkTransform = message.transforms.find((transform: any) => 
+          transform.child_frame_id === 'robomaster/base_link' && 
+          transform.header.frame_id === 'robomaster/odom'
+        );
+
+        if (baseLinkTransform) {
+          console.log('Found base_link transform:', baseLinkTransform); // Debug log
+          setTfData({
+            position: {
+              x: baseLinkTransform.transform.translation.x,
+              y: baseLinkTransform.transform.translation.y,
+              z: baseLinkTransform.transform.translation.z
+            },
+            orientation: {
+              x: baseLinkTransform.transform.rotation.x,
+              y: baseLinkTransform.transform.rotation.y,
+              z: baseLinkTransform.transform.rotation.z,
+              w: baseLinkTransform.transform.rotation.w
+            },
+            timestamp: Date.now()
+          });
+          setTfConnected(true);
+        }
+      }
+    });
+
+    // Set a timeout to detect if we're not receiving data
+    const timeoutId = setTimeout(() => {
+      if (!tfConnected) {
+        console.warn('No TF data received within 5 seconds');
+      }
+    }, 5000);
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timeoutId);
+      if (tfTopic) {
+        tfTopic.unsubscribe();
+        console.log('TF subscription cleaned up');
+      }
+    };
+  }, [ros]);
+
+  // Integrated position tracking effect - subscribes to cmd_vel to track rotations
+  useEffect(() => {
+    if (!ros) {
+      setCmdVelSubscribed(false);
+      return;
+    }
+
+    console.log('Setting up cmd_vel subscription for position integration');
+
+    // Subscribe to cmd_vel to track intended movements
+    const cmdVelTopic = new ROSLIB.Topic({
+      ros: ros,
+      name: '/robomaster/cmd_vel',
+      messageType: 'geometry_msgs/Twist'
+    });
+
+    let lastCmdTime = Date.now();
+    
+    cmdVelTopic.subscribe((message: any) => {
+      const currentTime = Date.now();
+      const dt = (currentTime - lastCmdTime) / 1000; // Convert to seconds
+      lastCmdTime = currentTime;
+
+      if (dt > 0.5) return; // Ignore large time gaps
+
+      const linearX = message.linear.x || 0;
+      const linearY = message.linear.y || 0;
+      const angularZ = message.angular.z || 0;
+
+      setIntegratedPosition(prev => {
+        // Update orientation first
+        const newTheta = prev.theta + angularZ * dt;
+        
+        // Update position based on current orientation
+        const deltaX = (linearX * Math.cos(prev.theta) - linearY * Math.sin(prev.theta)) * dt;
+        const deltaY = (linearX * Math.sin(prev.theta) + linearY * Math.cos(prev.theta)) * dt;
+
+        return {
+          x: prev.x + deltaX,
+          y: prev.y + deltaY,
+          theta: newTheta,
+          timestamp: currentTime
+        };
+      });
+    });
+
+    setCmdVelSubscribed(true);
+
+    // Cleanup function
+    return () => {
+      if (cmdVelTopic) {
+        cmdVelTopic.unsubscribe();
+        console.log('cmd_vel subscription cleaned up');
+      }
+    };
+  }, [ros]);
+
+  // Reset integrated position when odometry position changes significantly (like when using navigation actions)
+  useEffect(() => {
+    if (tfData && tfData.position) {
+      const currentOdom = { x: tfData.position.x, y: tfData.position.y };
+      
+      if (lastOdomPosition) {
+        const dx = currentOdom.x - lastOdomPosition.x;
+        const dy = currentOdom.y - lastOdomPosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // If robot moved significantly via navigation (not manual cmd_vel), reset integrated position
+        if (distance > 0.1) {
+          console.log('Large odometry change detected, resetting integrated position');
+          setIntegratedPosition(prev => ({
+            x: currentOdom.x,
+            y: currentOdom.y,
+            theta: prev.theta, // Keep the integrated orientation
+            timestamp: Date.now()
+          }));
+        }
+      }
+      
+      setLastOdomPosition(currentOdom);
+    }
+  }, [tfData, lastOdomPosition]);
+
+  // Helper function to convert quaternion to euler angles (for display)
+  const quaternionToEuler = (q: { x: number; y: number; z: number; w: number }) => {
+    // Roll (x-axis rotation)
+    const sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+    const cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+    const roll = Math.atan2(sinr_cosp, cosr_cosp);
+
+    // Pitch (y-axis rotation)
+    const sinp = 2 * (q.w * q.y - q.z * q.x);
+    const pitch = Math.abs(sinp) >= 1 ? Math.sign(sinp) * Math.PI / 2 : Math.asin(sinp);
+
+    // Yaw (z-axis rotation)
+    const siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+    const cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+    const yaw = Math.atan2(siny_cosp, cosy_cosp);
+
+    return {
+      roll: roll * 180 / Math.PI,
+      pitch: pitch * 180 / Math.PI,
+      yaw: yaw * 180 / Math.PI
+    };
+  };
 
   const publishLedColor = (
     r: number,
@@ -645,6 +849,75 @@ export default function ActionsPanel({
       alignItems="flex-start"
       mt={2}
     >
+      {/* Robot Position/TF Section */}
+      <Box minWidth={240}>
+        <Typography variant="h6">Robot Position (TF)</Typography>
+        <Divider sx={{ mb: 1 }} />
+        <Card variant="outlined" sx={{ mb: 2 }}>
+          <CardContent sx={{ padding: 1 }}>
+            {tfConnected && tfData ? (
+              <Stack spacing={1}>
+                <Typography variant="caption" color="success.main">
+                  ✓ Connected to /tf
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Frame: robomaster/base_link → robomaster/odom
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Position:</strong>
+                </Typography>
+                <Typography variant="caption" component="div">
+                  X: {tfData.position.x.toFixed(3)} m
+                </Typography>
+                <Typography variant="caption" component="div">
+                  Y: {tfData.position.y.toFixed(3)} m
+                </Typography>
+                <Typography variant="caption" component="div">
+                  Z: {tfData.position.z.toFixed(3)} m
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  <strong>Orientation (RPY):</strong>
+                </Typography>
+                {(() => {
+                  const euler = quaternionToEuler(tfData.orientation);
+                  return (
+                    <>
+                      <Typography variant="caption" component="div">
+                        Roll: {euler.roll.toFixed(1)}°
+                      </Typography>
+                      <Typography variant="caption" component="div">
+                        Pitch: {euler.pitch.toFixed(1)}°
+                      </Typography>
+                      <Typography variant="caption" component="div">
+                        Yaw: {euler.yaw.toFixed(1)}°
+                      </Typography>
+                    </>
+                  );
+                })()}
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                  Last update: {new Date(tfData.timestamp).toLocaleTimeString()}
+                </Typography>
+              </Stack>
+            ) : (
+              <Stack spacing={1} alignItems="center">
+                <Typography variant="caption" color="error.main">
+                  ✗ No TF data
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Waiting for /tf messages...
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ROS Connected: {ros?.isConnected ? '✓' : '✗'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                  Looking for: robomaster/base_link
+                </Typography>
+              </Stack>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
+
       {/* Experiment Control Section */}
       <Box minWidth={220}>
         <ExperimentControl
