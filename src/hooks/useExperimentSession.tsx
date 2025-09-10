@@ -25,6 +25,54 @@ export const useExperimentSession = () => {
   const [isRecording, setIsRecording] = useState(false);
   const eventsRef = useRef<ExperimentEvent[]>([]);
 
+  // Load session from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedSession = localStorage.getItem('experiment-session');
+      const savedEvents = localStorage.getItem('experiment-events');
+      
+      if (savedSession) {
+        const session = JSON.parse(savedSession);
+        // Only restore if the session was active (no end_time)
+        if (!session.end_time) {
+          setCurrentSession(session);
+          setIsRecording(true);
+          
+          if (savedEvents) {
+            eventsRef.current = JSON.parse(savedEvents);
+          }
+          
+          console.log('Restored experiment session from localStorage:', session.session_id);
+        } else {
+          // Clean up completed session
+          localStorage.removeItem('experiment-session');
+          localStorage.removeItem('experiment-events');
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to restore session from localStorage:', error);
+      // Clean up corrupted data
+      localStorage.removeItem('experiment-session');
+      localStorage.removeItem('experiment-events');
+    }
+  }, []);
+
+  // Save session to localStorage whenever it changes
+  useEffect(() => {
+    if (currentSession && isRecording) {
+      localStorage.setItem('experiment-session', JSON.stringify(currentSession));
+    } else {
+      localStorage.removeItem('experiment-session');
+    }
+  }, [currentSession, isRecording]);
+
+  // Save events to localStorage periodically
+  useEffect(() => {
+    if (isRecording && eventsRef.current.length > 0) {
+      localStorage.setItem('experiment-events', JSON.stringify(eventsRef.current));
+    }
+  }, [isRecording]);
+
   // Start a new experiment session
   const startSession = useCallback((experimentName?: string, operatorId?: string, notes?: string) => {
     const sessionId = `exp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
@@ -42,6 +90,10 @@ export const useExperimentSession = () => {
     setCurrentSession(newSession);
     setIsRecording(true);
     eventsRef.current = [];
+    
+    // Save to localStorage immediately
+    localStorage.setItem('experiment-session', JSON.stringify(newSession));
+    localStorage.removeItem('experiment-events');
     
     console.log(`Started experiment session: ${sessionId}`);
     return sessionId;
@@ -68,6 +120,10 @@ export const useExperimentSession = () => {
     setIsRecording(false);
     eventsRef.current = [];
     
+    // Clean up localStorage
+    localStorage.removeItem('experiment-session');
+    localStorage.removeItem('experiment-events');
+    
     console.log(`Stopped experiment session: ${finalSession.session_id}`);
     return finalSession;
   }, [currentSession, isRecording]);
@@ -76,6 +132,9 @@ export const useExperimentSession = () => {
   const addEvent = useCallback((event: ExperimentEvent) => {
     if (isRecording && currentSession) {
       eventsRef.current.push(event);
+      
+      // Update localStorage with new event
+      localStorage.setItem('experiment-events', JSON.stringify(eventsRef.current));
       
       // Also save individual event to JSONL in real-time
       saveEventToFile(event, currentSession.session_id);

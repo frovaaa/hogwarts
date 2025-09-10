@@ -38,6 +38,7 @@ export default function Homepage() {
   } | null>(null);
   // --- MoveSpeed state lifted up ---
   const [moveSpeed, setMoveSpeed] = useState(0.5);
+  const [sessionRestored, setSessionRestored] = useState(false);
 
   const ipFromUrl =
     typeof window !== 'undefined' ? window.location.hostname : null;
@@ -48,6 +49,30 @@ export default function Homepage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manualIp]);
+
+  // Check for restored session on mount
+  useEffect(() => {
+    const checkRestoredSession = () => {
+      const savedSession = localStorage.getItem('experiment-control-session');
+      const savedExperimentSession = localStorage.getItem('experiment-session');
+
+      if (savedSession || savedExperimentSession) {
+        setSessionRestored(true);
+        setActionResult({
+          success: true,
+          message: 'Session restored after page refresh',
+        });
+
+        // Clear the restoration message after 3 seconds
+        setTimeout(() => {
+          setSessionRestored(false);
+          setActionResult(null);
+        }, 3000);
+      }
+    };
+
+    checkRestoredSession();
+  }, []); // Empty dependency array - only run on mount
 
   const handleManualConnect = () => {
     if (manualIp) {
@@ -64,12 +89,12 @@ export default function Homepage() {
 
   const handleSessionChange = (sessionId: string | null) => {
     setCurrentSessionId(sessionId);
-    if (sessionId) {
+    if (sessionId && !sessionRestored) {
       setActionResult({
         success: true,
         message: `Experiment session started: ${sessionId}`,
       });
-    } else {
+    } else if (!sessionId) {
       setActionResult({
         success: true,
         message: 'Experiment session ended',

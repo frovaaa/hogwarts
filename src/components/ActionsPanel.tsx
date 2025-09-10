@@ -1,6 +1,15 @@
-import { Box, Button, Typography, Divider, Slider, Stack, Card, CardContent } from '@mui/material';
+import {
+  Box,
+  Button,
+  Typography,
+  Divider,
+  Slider,
+  Stack,
+  Card,
+  CardContent,
+} from '@mui/material';
 import ROSLIB from 'roslib';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useExperimentLogger } from '../hooks/useExperimentLogger';
 import ExperimentControl from './ExperimentControl';
 
@@ -98,12 +107,19 @@ export default function ActionsPanel({
   // --- New state for TF monitoring ---
   const [tfData, setTfData] = useState<TFData | null>(null);
   const [tfConnected, setTfConnected] = useState(false);
+  const tfConnectedRef = useRef(false); // Track if we've already set tfConnected
   // --- New state for integrated position tracking ---
-  const [integratedPosition, setIntegratedPosition] = useState<IntegratedPosition>({
-    x: 0, y: 0, theta: 0, timestamp: Date.now()
+  const integratedPositionRef = useRef<IntegratedPosition>({
+    x: 0,
+    y: 0,
+    theta: 0,
+    timestamp: Date.now(),
   });
-  const [cmdVelSubscribed, setCmdVelSubscribed] = useState(false);
-  const [lastOdomPosition, setLastOdomPosition] = useState<{x: number; y: number} | null>(null);
+  const [, setCmdVelSubscribed] = useState(false);
+  const lastOdomPositionRef = useRef<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Initialize experiment logger with session ID
   const {
@@ -115,8 +131,22 @@ export default function ActionsPanel({
     logMacroEvent,
     logSystemEvent,
     exportLogsAsJsonl,
+    saveAllLogsToServer,
     clearLogs,
-  } = useExperimentLogger(ros, sessionId);
+  } = useExperimentLogger(ros, sessionId, manualIp);
+
+  // Memoized session change handler to prevent unnecessary re-renders
+  const handleSessionChange = useCallback(
+    (sessionId: string | null) => {
+      // Clear logs when starting a new session
+      if (sessionId) {
+        clearLogs();
+      }
+      // Pass the session change up to the parent component
+      onSessionChange?.(sessionId);
+    },
+    [clearLogs, onSessionChange]
+  );
 
   // TF listener effect
   useEffect(() => {
@@ -132,54 +162,53 @@ export default function ActionsPanel({
     const tfTopic = new ROSLIB.Topic({
       ros: ros,
       name: '/tf',
-      messageType: 'tf2_msgs/TFMessage'
+      messageType: 'tf2_msgs/TFMessage',
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tfTopic.subscribe((message: any) => {
-      console.log('Received /tf message:', message); // Debug log
-      
+      // ...existing code...
       // Look for the robomaster/base_link transform
       if (message.transforms && Array.isArray(message.transforms)) {
-        const baseLinkTransform = message.transforms.find((transform: any) => 
-          transform.child_frame_id === 'robomaster/base_link' && 
-          transform.header.frame_id === 'robomaster/odom'
+        const baseLinkTransform = message.transforms.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (transform: any) =>
+            transform.child_frame_id === 'robomaster/base_link' &&
+            transform.header.frame_id === 'robomaster/odom'
         );
 
         if (baseLinkTransform) {
-          console.log('Found base_link transform:', baseLinkTransform); // Debug log
           setTfData({
             position: {
               x: baseLinkTransform.transform.translation.x,
               y: baseLinkTransform.transform.translation.y,
-              z: baseLinkTransform.transform.translation.z
+              z: baseLinkTransform.transform.translation.z,
             },
             orientation: {
               x: baseLinkTransform.transform.rotation.x,
               y: baseLinkTransform.transform.rotation.y,
               z: baseLinkTransform.transform.rotation.z,
-              w: baseLinkTransform.transform.rotation.w
+              w: baseLinkTransform.transform.rotation.w,
             },
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
-          setTfConnected(true);
+          if (!tfConnectedRef.current) {
+            setTfConnected(true);
+            tfConnectedRef.current = true;
+          }
         }
       }
     });
 
-    // Set a timeout to detect if we're not receiving data
-    const timeoutId = setTimeout(() => {
-      if (!tfConnected) {
-        console.warn('No TF data received within 5 seconds');
-      }
-    }, 5000);
-
     // Cleanup function
     return () => {
-      clearTimeout(timeoutId);
       if (tfTopic) {
         tfTopic.unsubscribe();
         console.log('TF subscription cleaned up');
       }
+      // Reset connection state when cleaning up
+      setTfConnected(false);
+      tfConnectedRef.current = false;
     };
   }, [ros]);
 
@@ -196,11 +225,12 @@ export default function ActionsPanel({
     const cmdVelTopic = new ROSLIB.Topic({
       ros: ros,
       name: '/robomaster/cmd_vel',
-      messageType: 'geometry_msgs/Twist'
+      messageType: 'geometry_msgs/Twist',
     });
 
     let lastCmdTime = Date.now();
-    
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cmdVelTopic.subscribe((message: any) => {
       const currentTime = Date.now();
       const dt = (currentTime - lastCmdTime) / 1000; // Convert to seconds
@@ -212,21 +242,24 @@ export default function ActionsPanel({
       const linearY = message.linear.y || 0;
       const angularZ = message.angular.z || 0;
 
-      setIntegratedPosition(prev => {
-        // Update orientation first
-        const newTheta = prev.theta + angularZ * dt;
-        
-        // Update position based on current orientation
-        const deltaX = (linearX * Math.cos(prev.theta) - linearY * Math.sin(prev.theta)) * dt;
-        const deltaY = (linearX * Math.sin(prev.theta) + linearY * Math.cos(prev.theta)) * dt;
+      // Update integrated position using ref instead of state to avoid re-renders
+      const prev = integratedPositionRef.current;
 
-        return {
-          x: prev.x + deltaX,
-          y: prev.y + deltaY,
-          theta: newTheta,
-          timestamp: currentTime
-        };
-      });
+      // Update orientation first
+      const newTheta = prev.theta + angularZ * dt;
+
+      // Update position based on current orientation
+      const deltaX =
+        (linearX * Math.cos(prev.theta) - linearY * Math.sin(prev.theta)) * dt;
+      const deltaY =
+        (linearX * Math.sin(prev.theta) + linearY * Math.cos(prev.theta)) * dt;
+
+      integratedPositionRef.current = {
+        x: prev.x + deltaX,
+        y: prev.y + deltaY,
+        theta: newTheta,
+        timestamp: currentTime,
+      };
     });
 
     setCmdVelSubscribed(true);
@@ -244,30 +277,37 @@ export default function ActionsPanel({
   useEffect(() => {
     if (tfData && tfData.position) {
       const currentOdom = { x: tfData.position.x, y: tfData.position.y };
-      
-      if (lastOdomPosition) {
-        const dx = currentOdom.x - lastOdomPosition.x;
-        const dy = currentOdom.y - lastOdomPosition.y;
+
+      if (lastOdomPositionRef.current) {
+        const dx = currentOdom.x - lastOdomPositionRef.current.x;
+        const dy = currentOdom.y - lastOdomPositionRef.current.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         // If robot moved significantly via navigation (not manual cmd_vel), reset integrated position
         if (distance > 0.1) {
-          console.log('Large odometry change detected, resetting integrated position');
-          setIntegratedPosition(prev => ({
+          console.log(
+            'Large odometry change detected, resetting integrated position'
+          );
+          integratedPositionRef.current = {
             x: currentOdom.x,
             y: currentOdom.y,
-            theta: prev.theta, // Keep the integrated orientation
-            timestamp: Date.now()
-          }));
+            theta: integratedPositionRef.current.theta, // Keep the integrated orientation
+            timestamp: Date.now(),
+          };
         }
       }
-      
-      setLastOdomPosition(currentOdom);
+
+      lastOdomPositionRef.current = currentOdom;
     }
-  }, [tfData, lastOdomPosition]);
+  }, [tfData]);
 
   // Helper function to convert quaternion to euler angles (for display)
-  const quaternionToEuler = (q: { x: number; y: number; z: number; w: number }) => {
+  const quaternionToEuler = (q: {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+  }) => {
     // Roll (x-axis rotation)
     const sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
     const cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
@@ -275,7 +315,8 @@ export default function ActionsPanel({
 
     // Pitch (y-axis rotation)
     const sinp = 2 * (q.w * q.y - q.z * q.x);
-    const pitch = Math.abs(sinp) >= 1 ? Math.sign(sinp) * Math.PI / 2 : Math.asin(sinp);
+    const pitch =
+      Math.abs(sinp) >= 1 ? (Math.sign(sinp) * Math.PI) / 2 : Math.asin(sinp);
 
     // Yaw (z-axis rotation)
     const siny_cosp = 2 * (q.w * q.z + q.x * q.y);
@@ -283,9 +324,9 @@ export default function ActionsPanel({
     const yaw = Math.atan2(siny_cosp, cosy_cosp);
 
     return {
-      roll: roll * 180 / Math.PI,
-      pitch: pitch * 180 / Math.PI,
-      yaw: yaw * 180 / Math.PI
+      roll: (roll * 180) / Math.PI,
+      pitch: (pitch * 180) / Math.PI,
+      yaw: (yaw * 180) / Math.PI,
     };
   };
 
@@ -322,7 +363,7 @@ export default function ActionsPanel({
         g: scaledG,
         b: scaledB,
         intensity: intensity,
-        color_name: getColorName(r, g, b)
+        color_name: getColorName(r, g, b),
       });
     } else {
       console.error(
@@ -362,7 +403,7 @@ export default function ActionsPanel({
     eventLogger('generic_action', {
       action_name: actionName,
       action_type: actionType,
-      goal: goal
+      goal: goal,
     });
 
     try {
@@ -395,7 +436,7 @@ export default function ActionsPanel({
           action_type: actionType,
           goal: goal,
           error: errorText,
-          status: response.status
+          status: response.status,
         });
         return;
       }
@@ -416,7 +457,7 @@ export default function ActionsPanel({
         action_type: actionType,
         goal: goal,
         result: result,
-        success: result.result.success === true || result.status == 4
+        success: result.result.success === true || result.status == 4,
       });
     } catch (err) {
       console.error(
@@ -433,7 +474,7 @@ export default function ActionsPanel({
         action_name: actionName,
         action_type: actionType,
         goal: goal,
-        error: err instanceof Error ? err.message : String(err)
+        error: err instanceof Error ? err.message : String(err),
       });
     } finally {
       setIsActionInProgress(false); // Re-enable buttons
@@ -442,7 +483,8 @@ export default function ActionsPanel({
 
   // Helper to determine action category for logging
   const getActionCategory = (actionName: string): string => {
-    if (actionName.includes('move_robot') || actionName.includes('move')) return 'movement';
+    if (actionName.includes('move_robot') || actionName.includes('move'))
+      return 'movement';
     if (actionName.includes('arm')) return 'arm';
     if (actionName.includes('gripper')) return 'gripper';
     if (actionName.includes('led')) return 'led';
@@ -453,12 +495,18 @@ export default function ActionsPanel({
   // Helper to get the right event logger based on category
   const getEventLogger = (category: string) => {
     switch (category) {
-      case 'movement': return logMovementEvent;
-      case 'arm': return logArmEvent;
-      case 'gripper': return logGripperEvent;
-      case 'led': return logLedEvent;
-      case 'sound': return logSoundEvent;
-      default: return logSystemEvent;
+      case 'movement':
+        return logMovementEvent;
+      case 'arm':
+        return logArmEvent;
+      case 'gripper':
+        return logGripperEvent;
+      case 'led':
+        return logLedEvent;
+      case 'sound':
+        return logSoundEvent;
+      default:
+        return logSystemEvent;
     }
   };
 
@@ -489,7 +537,7 @@ export default function ActionsPanel({
       behavior: behavior,
       times: times,
       speed: speed,
-      intensity: ledIntensity
+      intensity: ledIntensity,
     });
 
     const blinkLed = (
@@ -540,7 +588,7 @@ export default function ActionsPanel({
     // Log the rotation event
     logMovementEvent('rotate_on_spot', {
       cycles: cycles,
-      angular_speed: angularSpeed
+      angular_speed: angularSpeed,
     });
 
     console.log(`Rotating on the spot for ${cycles} cycles…`);
@@ -603,7 +651,7 @@ export default function ActionsPanel({
     // Log the sound event
     logSoundEvent('play_sound', {
       sound_id: sound_id,
-      sound_name: getSoundName(sound_id)
+      sound_name: getSoundName(sound_id),
     });
 
     const soundTopic = new ROSLIB.Topic({
@@ -631,11 +679,16 @@ export default function ActionsPanel({
   // Helper function to get sound name for logging
   const getSoundName = (soundId: number): string => {
     switch (soundId) {
-      case 262: return 'beep';
-      case 263: return 'chime';
-      case 264: return 'melody';
-      case 265: return 'note';
-      default: return `custom_sound_${soundId}`;
+      case 262:
+        return 'beep';
+      case 263:
+        return 'chime';
+      case 264:
+        return 'melody';
+      case 265:
+        return 'note';
+      default:
+        return `custom_sound_${soundId}`;
     }
   };
 
@@ -652,7 +705,7 @@ export default function ActionsPanel({
       // Log the panic event
       logSystemEvent('panic_signal', {
         repeat_count: 5,
-        interval_ms: 100
+        interval_ms: 100,
       });
 
       console.log('Publishing panic signal to /robomaster/panic 5 times');
@@ -697,7 +750,7 @@ export default function ActionsPanel({
     // Log the complex sound event
     logSoundEvent('happy_chime_sequence', {
       sequence: [263, 264, 265, 262, 263, 264, 265],
-      timing: 'sequential with delays'
+      timing: 'sequential with delays',
     });
 
     playCustomSound(263);
@@ -714,7 +767,7 @@ export default function ActionsPanel({
     // Log the macro event
     logMacroEvent('execute_macro', {
       macro_name: macro,
-      macro_type: macro
+      macro_type: macro,
     });
 
     switch (macro) {
@@ -753,7 +806,7 @@ export default function ActionsPanel({
     // Log the positive feedback event
     logSystemEvent('positive_feedback', {
       feedback_level: feedbackLevel,
-      actions_triggered: getFeedbackActions(feedbackLevel, 'positive')
+      actions_triggered: getFeedbackActions(feedbackLevel, 'positive'),
     });
 
     // Level 1: green blink, Level 2: green blink + sound, Level 3: green blink + sound + spin
@@ -781,7 +834,7 @@ export default function ActionsPanel({
     // Log the move back event
     logMovementEvent('move_backward', {
       distance: distance,
-      duration: duration
+      duration: duration,
     });
 
     const cmdVelTopic = new ROSLIB.Topic({
@@ -806,7 +859,7 @@ export default function ActionsPanel({
     // Log the negative feedback event
     logSystemEvent('negative_feedback', {
       feedback_level: feedbackLevel,
-      actions_triggered: getFeedbackActions(feedbackLevel, 'negative')
+      actions_triggered: getFeedbackActions(feedbackLevel, 'negative'),
     });
 
     // Level 1: red blink, Level 2: red blink + back, Level 3: red blink + more back
@@ -822,20 +875,35 @@ export default function ActionsPanel({
   };
 
   // Helper function to describe feedback actions
-  const getFeedbackActions = (level: number, type: 'positive' | 'negative'): string[] => {
+  const getFeedbackActions = (
+    level: number,
+    type: 'positive' | 'negative'
+  ): string[] => {
     if (type === 'positive') {
       switch (level) {
-        case 1: return ['led_blink_green_4x'];
-        case 2: return ['led_blink_green_6x', 'sound_beep_3x'];
-        case 3: return ['led_blink_green_8x', 'happy_chime_sequence', 'rotate_2_cycles'];
-        default: return ['unknown'];
+        case 1:
+          return ['led_blink_green_4x'];
+        case 2:
+          return ['led_blink_green_6x', 'sound_beep_3x'];
+        case 3:
+          return [
+            'led_blink_green_8x',
+            'happy_chime_sequence',
+            'rotate_2_cycles',
+          ];
+        default:
+          return ['unknown'];
       }
     } else {
       switch (level) {
-        case 1: return ['led_blink_red_2x'];
-        case 2: return ['led_blink_red_4x', 'move_back_0.2m'];
-        case 3: return ['led_blink_red_6x', 'move_back_0.4m'];
-        default: return ['unknown'];
+        case 1:
+          return ['led_blink_red_2x'];
+        case 2:
+          return ['led_blink_red_4x', 'move_back_0.2m'];
+        case 3:
+          return ['led_blink_red_6x', 'move_back_0.4m'];
+        default:
+          return ['unknown'];
       }
     }
   };
@@ -894,7 +962,11 @@ export default function ActionsPanel({
                     </>
                   );
                 })()}
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mt: 1 }}
+                >
                   Last update: {new Date(tfData.timestamp).toLocaleTimeString()}
                 </Typography>
               </Stack>
@@ -909,7 +981,11 @@ export default function ActionsPanel({
                 <Typography variant="caption" color="text.secondary">
                   ROS Connected: {ros?.isConnected ? '✓' : '✗'}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontSize: '0.7rem' }}
+                >
                   Looking for: robomaster/base_link
                 </Typography>
               </Stack>
@@ -922,18 +998,12 @@ export default function ActionsPanel({
       <Box minWidth={220}>
         <ExperimentControl
           manualIp={manualIp}
-          onSessionChange={(sessionId) => {
-            // Clear logs when starting a new session
-            if (sessionId) {
-              clearLogs();
-            }
-            // Pass the session change up to the parent component
-            onSessionChange?.(sessionId);
-          }}
+          onSessionChange={handleSessionChange}
           exportLogsAsJsonl={exportLogsAsJsonl}
+          saveAllLogsToServer={saveAllLogsToServer}
         />
       </Box>
-      
+
       {/* LEDs Section */}
       <Box minWidth={220}>
         <Typography variant="h6">LEDs</Typography>

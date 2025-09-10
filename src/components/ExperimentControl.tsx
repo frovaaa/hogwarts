@@ -24,6 +24,7 @@ interface ExperimentControlProps {
   manualIp: string;
   onSessionChange?: (sessionId: string | null) => void;
   exportLogsAsJsonl?: () => string;
+  saveAllLogsToServer?: () => Promise<boolean>;
 }
 
 interface BagStatus {
@@ -44,6 +45,7 @@ export default function ExperimentControl({
   manualIp,
   onSessionChange,
   exportLogsAsJsonl,
+  saveAllLogsToServer,
 }: ExperimentControlProps) {
   const [sessionName, setSessionName] = useState('');
   const [currentSession, setCurrentSession] = useState<string | null>(null);
@@ -59,6 +61,48 @@ export default function ExperimentControl({
   const [showLogsDialog, setShowLogsDialog] = useState(false);
   const [logFiles, setLogFiles] = useState<LogFile[]>([]);
 
+  // Load session from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedSession = localStorage.getItem('experiment-control-session');
+      const savedStartTime = localStorage.getItem(
+        'experiment-control-start-time'
+      );
+
+      if (savedSession && savedStartTime) {
+        setCurrentSession(savedSession);
+        setSessionStartTime(new Date(savedStartTime));
+        onSessionChange?.(savedSession);
+        console.log(
+          'Restored experiment control session from localStorage:',
+          savedSession
+        );
+      }
+    } catch (error) {
+      console.warn(
+        'Failed to restore experiment control session from localStorage:',
+        error
+      );
+      localStorage.removeItem('experiment-control-session');
+      localStorage.removeItem('experiment-control-start-time');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run on mount to restore session
+
+  // Save session to localStorage whenever it changes
+  useEffect(() => {
+    if (currentSession && sessionStartTime) {
+      localStorage.setItem('experiment-control-session', currentSession);
+      localStorage.setItem(
+        'experiment-control-start-time',
+        sessionStartTime.toISOString()
+      );
+    } else {
+      localStorage.removeItem('experiment-control-session');
+      localStorage.removeItem('experiment-control-start-time');
+    }
+  }, [currentSession, sessionStartTime]);
+
   // Check bag status periodically
   useEffect(() => {
     const checkBagStatus = async () => {
@@ -67,8 +111,15 @@ export default function ExperimentControl({
         if (response.ok) {
           const status = await response.json();
           setBagStatus(status);
+
+          // If we have a session but bag is not recording, there might be a disconnect
+          if (currentSession && !status.recording) {
+            console.warn(
+              'Session exists but bag is not recording - possible disconnection or crash'
+            );
+          }
         }
-      } catch (err) {
+      } catch {
         // Silently fail - bag status check shouldn't interrupt user experience
       }
     };
@@ -77,7 +128,7 @@ export default function ExperimentControl({
     const interval = setInterval(checkBagStatus, 2000); // Check every 2 seconds
 
     return () => clearInterval(interval);
-  }, [manualIp]);
+  }, [manualIp, currentSession]);
 
   const startSession = async () => {
     if (!sessionName.trim()) {
@@ -104,12 +155,22 @@ export default function ExperimentControl({
       }
 
       const bagData = await bagResponse.json();
-      
+
       // Set current session
-      const sessionId = `${sessionName.trim()}_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+      const sessionId = `${sessionName.trim()}_${new Date()
+        .toISOString()
+        .replace(/[:.]/g, '-')}`;
+      const startTime = new Date();
       setCurrentSession(sessionId);
-      setSessionStartTime(new Date());
+      setSessionStartTime(startTime);
       onSessionChange?.(sessionId);
+
+      // Save to localStorage immediately
+      localStorage.setItem('experiment-control-session', sessionId);
+      localStorage.setItem(
+        'experiment-control-start-time',
+        startTime.toISOString()
+      );
 
       setSuccess(`Session started: ${sessionName}`);
       console.log('Bag recording started:', bagData);
@@ -127,30 +188,62 @@ export default function ExperimentControl({
     setLoading(true);
     setError(null);
 
-    try {
-      // Save experiment logs if available
+    // Fallback save method using the old approach
+    const fallbackSaveLogs = async () => {
       if (exportLogsAsJsonl && currentSession) {
         try {
           const logsJsonl = exportLogsAsJsonl();
           if (logsJsonl.trim()) {
-            const saveResponse = await fetch(`http://${manualIp}:4000/experiment/logs/save`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                sessionId: currentSession,
-                logs: logsJsonl,
-              }),
-            });
+            const saveResponse = await fetch(
+              `http://${manualIp}:4000/experiment/logs/save`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  sessionId: currentSession,
+                  logs: logsJsonl,
+                }),
+              }
+            );
 
             if (!saveResponse.ok) {
               console.warn('Failed to save experiment logs, but continuing...');
             } else {
-              console.log('Experiment logs saved successfully');
+              console.log('Experiment logs saved successfully via fallback');
             }
           }
         } catch (logError) {
-          console.warn('Error saving experiment logs:', logError);
+          console.warn('Error saving experiment logs via fallback:', logError);
         }
+      }
+    };
+
+    try {
+      // Save experiment logs if available - use new saveAllLogsToServer if provided
+      if (saveAllLogsToServer && currentSession) {
+        try {
+          const saveSuccess = await saveAllLogsToServer();
+          if (saveSuccess) {
+            console.log(
+              'Experiment logs saved successfully using saveAllLogsToServer'
+            );
+          } else {
+            console.warn(
+              'Failed to save experiment logs using saveAllLogsToServer, trying fallback...'
+            );
+            // Fallback to old method
+            await fallbackSaveLogs();
+          }
+        } catch (logError) {
+          console.warn(
+            'Error saving experiment logs with saveAllLogsToServer:',
+            logError
+          );
+          // Fallback to old method
+          await fallbackSaveLogs();
+        }
+      } else if (exportLogsAsJsonl && currentSession) {
+        await fallbackSaveLogs();
       }
 
       // Stop ROS2 bag recording
@@ -170,6 +263,10 @@ export default function ExperimentControl({
       setSessionStartTime(null);
       onSessionChange?.(null);
 
+      // Clean up localStorage
+      localStorage.removeItem('experiment-control-session');
+      localStorage.removeItem('experiment-control-start-time');
+
       setSuccess('Session stopped and data saved');
       console.log('Bag recording stopped:', bagData);
 
@@ -184,7 +281,9 @@ export default function ExperimentControl({
 
   const loadLogFiles = async () => {
     try {
-      const response = await fetch(`http://${manualIp}:4000/experiment/logs/list`);
+      const response = await fetch(
+        `http://${manualIp}:4000/experiment/logs/list`
+      );
       if (response.ok) {
         const data = await response.json();
         setLogFiles(data.files || []);
@@ -196,7 +295,9 @@ export default function ExperimentControl({
 
   const downloadLogFile = async (sessionId: string) => {
     try {
-      const response = await fetch(`http://${manualIp}:4000/experiment/logs/download/${sessionId}`);
+      const response = await fetch(
+        `http://${manualIp}:4000/experiment/logs/download/${sessionId}`
+      );
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -237,7 +338,7 @@ export default function ExperimentControl({
     <Box minWidth={220}>
       <Typography variant="h6">Experiment Control</Typography>
       <Divider sx={{ mb: 1 }} />
-      
+
       <Stack spacing={1}>
         {loading && <LinearProgress sx={{ mb: 1 }} />}
 
@@ -248,7 +349,11 @@ export default function ExperimentControl({
         )}
 
         {success && (
-          <Alert severity="success" sx={{ mb: 1 }} onClose={() => setSuccess(null)}>
+          <Alert
+            severity="success"
+            sx={{ mb: 1 }}
+            onClose={() => setSuccess(null)}
+          >
             <Typography variant="caption">{success}</Typography>
           </Alert>
         )}
@@ -256,30 +361,35 @@ export default function ExperimentControl({
         {/* Current Session Status */}
         {currentSession ? (
           <Box sx={{ mb: 2 }}>
-            <Chip 
-              label="Session Active" 
-              color="success" 
+            <Chip
+              label="Session Active"
+              color="success"
               variant="filled"
               size="small"
               sx={{ mb: 1 }}
             />
-            <Typography variant="caption" display="block" color="text.secondary">
+            <Typography
+              variant="caption"
+              display="block"
+              color="text.secondary"
+            >
               {sessionStartTime && formatDuration(sessionStartTime)}
             </Typography>
             <Typography variant="caption" display="block" sx={{ mb: 1 }}>
-              <strong>ID:</strong> {currentSession.split('_').slice(0, -1).join('_')}
+              <strong>ID:</strong>{' '}
+              {currentSession.split('_').slice(0, -1).join('_')}
             </Typography>
-            <Chip 
-              label={bagStatus.recording ? "🔴 Recording" : "⚫ Stopped"} 
-              color={bagStatus.recording ? "success" : "default"}
+            <Chip
+              label={bagStatus.recording ? '🔴 Recording' : '⚫ Stopped'}
+              color={bagStatus.recording ? 'success' : 'default'}
               size="small"
             />
           </Box>
         ) : (
           <Box sx={{ mb: 2 }}>
-            <Chip 
-              label="No Active Session" 
-              color="default" 
+            <Chip
+              label="No Active Session"
+              color="default"
               variant="outlined"
               size="small"
             />
@@ -331,8 +441,8 @@ export default function ExperimentControl({
       </Stack>
 
       {/* Previous Sessions Dialog */}
-      <Dialog 
-        open={showLogsDialog} 
+      <Dialog
+        open={showLogsDialog}
         onClose={() => setShowLogsDialog(false)}
         maxWidth="md"
         fullWidth
@@ -344,7 +454,7 @@ export default function ExperimentControl({
           ) : (
             <List>
               {logFiles.map((file) => (
-                <ListItem 
+                <ListItem
                   key={file.sessionId}
                   secondaryAction={
                     <Button
@@ -359,7 +469,8 @@ export default function ExperimentControl({
                     primary={file.sessionId}
                     secondary={
                       <span>
-                        Created: {new Date(file.created).toLocaleString()} • Size: {formatFileSize(file.size)}
+                        Created: {new Date(file.created).toLocaleString()} •
+                        Size: {formatFileSize(file.size)}
                       </span>
                     }
                   />
