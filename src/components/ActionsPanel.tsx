@@ -483,12 +483,12 @@ export default function ActionsPanel({
 
   // Helper to determine action category for logging
   const getActionCategory = (actionName: string): string => {
+    if (actionName.includes('sound')) return 'sound';
+    if (actionName.includes('led')) return 'led';
+    if (actionName.includes('gripper')) return 'gripper';
+    if (actionName.includes('arm')) return 'arm';
     if (actionName.includes('move_robot') || actionName.includes('move'))
       return 'movement';
-    if (actionName.includes('arm')) return 'arm';
-    if (actionName.includes('gripper')) return 'gripper';
-    if (actionName.includes('led')) return 'led';
-    if (actionName.includes('sound')) return 'sound';
     return 'system';
   };
 
