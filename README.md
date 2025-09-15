@@ -1,30 +1,12 @@
-# Run the server
-
-`npm run dev`
-
-# NOTES
-
-Open the scene
-
-Run in command line of coppeliaSim
-
-simRobomaster = require('simRobomaster')
-
-I also had to download the models from the branch 4.4 of
-https://github.com/jeguzzi/robomaster_sim/tree/main
-
-ros2 bridge server run with:
-`ros2 launch rosbridge_server rosbridge_websocket_launch.xml`
-
-Start ssh server to connect vscode if in hyper-v:
-`sudo systemctl start ssh`
-
-navigation server
-`ros2 run navigation_world_ref_action_server navigation_world_ref_action_server_node`
-
 # STARTUP
 
-Open coppeliaSim and run the simulation
+Notice that this setup can be used also in simulation, e.g. CoppeliaSim
+
+These are the various packages to be run in the environment with ROS2 installed. The version of ROS2 used in our experiments is `humble`
+
+These are the commands to run the various packages.
+
+Refer to the original documentations of the packages for how-to instructions.
 
 `ros2 launch robomaster_ros ep.launch name:=robomaster conn_type:=ap`
 
@@ -37,6 +19,8 @@ Open coppeliaSim and run the simulation
 `ros2 run safety panic_handler_node`
 
 ## Safety Panic Stop
+
+By publishing any message to the topic `/robomaster/panic` the robot will stop all its movements and actions.
 
 `ros2 topic pub /robomaster/panic std_msgs/msg/Empty "{}"`
 
@@ -54,32 +38,16 @@ Open coppeliaSim and run the simulation
 
 `ros2 action send_goal /robomaster/move_arm_pose robomaster_hri_msgs/action/MoveArmPose "{pose_type: 4}" --feedback`
 
-## Gripper actions
+## Running the Dashboard
 
-### Close
+First we need to run the dashboard with the command
 
-`ros2 action send_goal /robomaster/gripper robomaster_msgs/action/GripperControl "{target_state: 2, power: 0.5}" --feedback`
+`npm run dev`
 
-### Open
+After that, we need to run the middleware.
 
-`ros2 action send_goal /robomaster/gripper robomaster_msgs/action/GripperControl "{target_state: 1, power: 0.5}" --feedback`
+Go to the folder `ros-server` and run
 
-## Audio
+`node index.js`
 
-### Play sound
-
-Change the sound_id to play different sounds.
-
-`ros2 topic pub /robomaster/cmd_sound robomaster_msgs/msg/SpeakerCommand "{control: 1, sound_id: 263, times: 1}" --once`
-
-## Optitrack rotation of world
-
-`ros2 run tf2_ros static_transform_publisher 0 0 0 -1.5707963 0 -1.5707963 world_enu world`
-
-`ros2 launch optitrack_ros_py all.launch`
-
-## How to check arguments of an action
-
-`ros2 action list -t`
-`ros2 interface show robomaster_msg/action/GripperControl`
-`ros2 action send_goal /robomaster/gripper robomaster_msgs/action/GripperControl "{target_state: 2, power: 0.5}" --feedback`
+to startup the middleware which will connect to the `rosbridge` package.
