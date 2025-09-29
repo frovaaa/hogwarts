@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Typography, Box } from '@mui/material';
-import ROSLIB, { Ros } from 'roslib';
+import ROSLIB from 'roslib';
+import { useRosContext } from '../hooks/useRosContext';
 
-interface PoseDataProps {
-  ros: Ros | null;
-}
-
-export default function PoseData({ ros }: PoseDataProps) {
+export default function ExternalPoseData() {
+  const { ros, robotConfig } = useRosContext();
   const [pose, setPose] = useState<string | null>(null);
 
   useEffect(() => {
-    if (ros) {
+    if (ros && robotConfig.topics.externalPose) {
       const poseListener = new ROSLIB.Topic({
         ros,
-        name: '/optitrack/robomaster_frova',
+        name: robotConfig.topics.externalPose,
         messageType: 'geometry_msgs/PoseStamped',
       });
 
@@ -44,11 +42,11 @@ export default function PoseData({ ros }: PoseDataProps) {
         poseListener.unsubscribe();
       };
     }
-  }, [ros]);
+  }, [ros, robotConfig.topics.externalPose]);
 
   return (
     <Box mt={2}>
-      <Typography variant="h6">Pose Data</Typography>
+      <Typography variant="h6">External Pose Data</Typography>
       <Typography
         variant="body2"
         component="pre"
@@ -60,7 +58,7 @@ export default function PoseData({ ros }: PoseDataProps) {
           width: '15rem',
         }}
       >
-        {pose || 'Waiting for pose data...'}
+        {pose || 'Waiting for external pose data...'}
       </Typography>
     </Box>
   );

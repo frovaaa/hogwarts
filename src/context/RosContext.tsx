@@ -1,13 +1,16 @@
 'use client';
 
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState, useMemo } from 'react';
 import ROSLIB from 'roslib';
+import { RobotConfig, getDefaultRobotConfig, getRobotConfig } from '../config/robotConfig';
 
 interface RosContextType {
   connected: boolean;
   ros: ROSLIB.Ros | null;
   rosIp: string;
+  robotConfig: RobotConfig;
   connectToRos: (rosIp: string) => void;
+  setRobotType: (robotName: string) => void;
 }
 
 /**
@@ -20,6 +23,7 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
   const [ros, setRos] = useState<ROSLIB.Ros | null>(null);
   const [connected, setConnected] = useState(false);
   const [rosIp, setRosIp] = useState<string>(''); // Initialize as an empty string
+  const [robotConfig, setRobotConfig] = useState<RobotConfig>(getDefaultRobotConfig());
 
   /**
    * Set the ROS IP to the hostname of the window when the component mounts.
@@ -31,6 +35,13 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
       setRosIp(window.location.hostname);
     }
   }, []);
+
+  /**
+   * Set the robot type and load the corresponding configuration
+   */
+  const setRobotType = (robotName: string) => {
+    setRobotConfig(getRobotConfig(robotName));
+  };
 
   /**
    * Connect to the ROS bridge server using the given IP.
@@ -83,15 +94,17 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [rosIp]);
 
+  const contextValue = useMemo(() => ({
+    connected,
+    ros,
+    rosIp,
+    robotConfig,
+    connectToRos,
+    setRobotType,
+  }), [connected, ros, rosIp, robotConfig]);
+
   return (
-    <RosContext.Provider
-      value={{
-        connected,
-        ros,
-        rosIp,
-        connectToRos,
-      }}
-    >
+    <RosContext.Provider value={contextValue}>
       {children}
     </RosContext.Provider>
   );

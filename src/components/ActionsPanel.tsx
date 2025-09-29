@@ -11,6 +11,7 @@ import {
 import ROSLIB from 'roslib';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useExperimentLogger } from '../hooks/useExperimentLogger';
+import { useRosContext } from '../hooks/useRosContext';
 import ExperimentControl from './ExperimentControl';
 
 interface ActionsPanelProps {
@@ -94,6 +95,7 @@ export default function ActionsPanel({
   moveSpeed,
   setMoveSpeed,
 }: ActionsPanelProps) {
+  const { robotConfig } = useRosContext();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isActionInProgress, setIsActionInProgress] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -224,7 +226,7 @@ export default function ActionsPanel({
     // Subscribe to cmd_vel to track intended movements
     const cmdVelTopic = new ROSLIB.Topic({
       ros: ros,
-      name: '/robomaster/cmd_vel',
+      name: robotConfig.topics.cmdVel,
       messageType: 'geometry_msgs/Twist',
     });
 
@@ -347,9 +349,13 @@ export default function ActionsPanel({
         b: scaledB,
         a: 1.0,
       });
+      if (!robotConfig.capabilities.hasLeds || !robotConfig.topics.leds) {
+        console.warn('Robot does not support LEDs');
+        return;
+      }
       const ledColorPublisher = new ROSLIB.Topic({
         ros,
-        name: '/robomaster/leds/color',
+        name: robotConfig.topics.leds,
         messageType: 'std_msgs/ColorRGBA',
       });
       ledColorPublisher.publish(msg);
@@ -512,7 +518,11 @@ export default function ActionsPanel({
 
   // Helper to move to any position
   const moveToPosition = async (pos: Position) => {
-    const actionName = '/robomaster/move_robot_world_ref';
+    if (!robotConfig.topics.moveRobotAction) {
+      console.warn('Robot does not support move robot action');
+      return;
+    }
+    const actionName = robotConfig.topics.moveRobotAction;
     const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
     const goal = {
       x: pos.x,
@@ -594,7 +604,7 @@ export default function ActionsPanel({
     console.log(`Rotating on the spot for ${cycles} cycles…`);
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
-      name: '/robomaster/cmd_vel',
+      name: robotConfig.topics.cmdVel,
       messageType: 'geometry_msgs/Twist',
     });
 
@@ -654,9 +664,13 @@ export default function ActionsPanel({
       sound_name: getSoundName(sound_id),
     });
 
+    if (!robotConfig.capabilities.hasSound || !robotConfig.topics.sound) {
+      console.warn('Robot does not support sound');
+      return;
+    }
     const soundTopic = new ROSLIB.Topic({
       ros,
-      name: '/robomaster/cmd_sound',
+      name: robotConfig.topics.sound,
       messageType: 'robomaster_msgs/msg/SpeakerCommand',
     });
     soundTopic.publish(
@@ -693,7 +707,11 @@ export default function ActionsPanel({
   };
 
   const moveArmPose = async (poseType: ArmPose) => {
-    const actionName = '/robomaster/move_arm_pose';
+    if (!robotConfig.capabilities.hasArm || !robotConfig.topics.moveArmAction) {
+      console.warn('Robot does not support arm control');
+      return;
+    }
+    const actionName = robotConfig.topics.moveArmAction;
     const actionType = 'robomaster_hri_msgs/action/MoveArmPose';
     const goal = { pose_type: poseType };
 
@@ -708,10 +726,14 @@ export default function ActionsPanel({
         interval_ms: 100,
       });
 
-      console.log('Publishing panic signal to /robomaster/panic 5 times');
+      if (!robotConfig.topics.panic) {
+        console.warn('Robot does not support panic signal');
+        return;
+      }
+      console.log(`Publishing panic signal to ${robotConfig.topics.panic} 5 times`);
       const panicPublisher = new ROSLIB.Topic({
         ros,
-        name: '/robomaster/panic',
+        name: robotConfig.topics.panic,
         messageType: 'std_msgs/Empty',
       });
 
@@ -737,7 +759,11 @@ export default function ActionsPanel({
 
   // --- Gripper control ---
   const handleGripper = async (targetState: GripperState) => {
-    const actionName = '/robomaster/gripper';
+    if (!robotConfig.capabilities.hasArm || !robotConfig.topics.gripperAction) {
+      console.warn('Robot does not support gripper control');
+      return;
+    }
+    const actionName = robotConfig.topics.gripperAction;
     const actionType = 'robomaster_msgs/action/GripperControl';
     const goal = {
       target_state: targetState,
@@ -839,7 +865,7 @@ export default function ActionsPanel({
 
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
-      name: '/robomaster/cmd_vel',
+      name: robotConfig.topics.cmdVel,
       messageType: 'geometry_msgs/Twist',
     });
     const twist = new ROSLIB.Message({
@@ -1231,9 +1257,11 @@ export default function ActionsPanel({
             onChange={(_, v) => setMoveSpeed(Number(v))}
           />
         </Stack>
-      </Box>
-      {/* Panic Button Section */}
-      <Box minWidth={120}>
+        </Box>
+      {/* )} */}
+      {/* Panic Button Section - Only show if robot has panic */}
+      {robotConfig.topics.panic && (
+        <Box minWidth={120}>
         <Typography variant="h6">Other</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
@@ -1247,29 +1275,32 @@ export default function ActionsPanel({
             Panic
           </Button>
         </Stack>
-      </Box>
-      {/* Sound Section */}
-      <Box minWidth={180}>
-        <Typography variant="h6">Sounds</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Stack spacing={1}>
-          <Button variant="outlined" onClick={() => playCustomSound(262)}>
-            Beep
-          </Button>
-          <Button variant="outlined" onClick={() => playCustomSound(263)}>
-            Chime
-          </Button>
-          <Button variant="outlined" onClick={() => playCustomSound(264)}>
-            Melody
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => handleMacro(MacroScenario.PLAY_HAPPY_CHIME)}
-          >
-            Happy Chime
-          </Button>
-        </Stack>
-      </Box>
+        </Box>
+      )}
+      {/* Sound Section - Only show if robot has sound */}
+      {robotConfig.capabilities.hasSound && (
+        <Box minWidth={180}>
+          <Typography variant="h6">Sounds</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
+            <Button variant="outlined" onClick={() => playCustomSound(262)}>
+              Beep
+            </Button>
+            <Button variant="outlined" onClick={() => playCustomSound(263)}>
+              Chime
+            </Button>
+            <Button variant="outlined" onClick={() => playCustomSound(264)}>
+              Melody
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => handleMacro(MacroScenario.PLAY_HAPPY_CHIME)}
+            >
+              Happy Chime
+            </Button>
+          </Stack>
+        </Box>
+      )}
     </Box>
   );
 }

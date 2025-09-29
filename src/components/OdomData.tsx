@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Typography, Box } from '@mui/material';
-import ROSLIB, { Ros } from 'roslib';
+import ROSLIB from 'roslib';
+import { useRosContext } from '../hooks/useRosContext';
 
-interface OdomDataProps {
-  ros: Ros | null;
-}
-
-export default function OdomData({ ros }: OdomDataProps) {
+export default function OdomData() {
+  const { ros, robotConfig } = useRosContext();
   const [odom, setOdom] = useState<string | null>(null);
 
   useEffect(() => {
-    if (ros) {
+    if (ros && robotConfig.topics.odom) {
       const odomListener = new ROSLIB.Topic({
         ros,
-        name: '/robomaster/odom',
+        name: robotConfig.topics.odom,
         messageType: 'nav_msgs/Odometry',
       });
 
@@ -34,7 +32,7 @@ export default function OdomData({ ros }: OdomDataProps) {
         odomListener.unsubscribe();
       };
     }
-  }, [ros]);
+  }, [ros, robotConfig.topics.odom]);
 
   return (
     <Box mt={2}>

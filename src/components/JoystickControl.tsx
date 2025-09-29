@@ -1,18 +1,18 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import ROSLIB, { Ros } from 'roslib';
+import ROSLIB from 'roslib';
 import { useExperimentLogger } from '../hooks/useExperimentLogger';
+import { useRosContext } from '../hooks/useRosContext';
 
 interface JoystickControlProps {
-  ros: Ros | null;
   moveSpeed: number;
 }
 
 export default function JoystickControl({
-  ros,
   moveSpeed,
 }: JoystickControlProps) {
+  const { ros, robotConfig } = useRosContext();
   const { logMovementEvent } = useExperimentLogger(ros);
   const lastLogTime = useRef(0);
   const logThrottleMs = 500; // Log joystick movements at most every 500ms
@@ -21,7 +21,7 @@ export default function JoystickControl({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let manager: any;
 
-    if (ros) {
+    if (ros && robotConfig.topics.cmdVel) {
       const joystickContainer = document.getElementById('joystick');
       if (joystickContainer) {
         // Dynamically import nipplejs
@@ -35,7 +35,7 @@ export default function JoystickControl({
 
           const cmdVelTopic = new ROSLIB.Topic({
             ros: ros,
-            name: '/robomaster/cmd_vel',
+            name: robotConfig.topics.cmdVel,
             messageType: 'geometry_msgs/Twist',
           });
 
@@ -98,7 +98,7 @@ export default function JoystickControl({
         manager.destroy();
       }
     };
-  }, [ros, moveSpeed]);
+  }, [ros, moveSpeed, robotConfig.topics.cmdVel, logMovementEvent]);
 
   return (
     <div

@@ -1,23 +1,22 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import ROSLIB, { Ros } from 'roslib';
+import ROSLIB from 'roslib';
+import { useRosContext } from '../hooks/useRosContext';
 
-interface CameraFeedProps {
-  ros: Ros | null;
-}
-
-export default function CameraFeed({ ros }: CameraFeedProps) {
+export default function CameraFeed() {
+  const { ros, robotConfig } = useRosContext();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (ros) {
+    if (ros && robotConfig.capabilities.hasCamera && robotConfig.topics.rgbCamera) {
       const imageTopic = new ROSLIB.Topic({
         ros: ros,
-        name: '/robomaster/camera/image_color',
+        name: robotConfig.topics.rgbCamera,
         messageType: 'sensor_msgs/Image',
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       imageTopic.subscribe((message: any) => {
         if (canvasRef.current) {
           const canvas = canvasRef.current;
@@ -59,7 +58,7 @@ export default function CameraFeed({ ros }: CameraFeedProps) {
         imageTopic.unsubscribe();
       };
     }
-  }, [ros]);
+  }, [ros, robotConfig.capabilities.hasCamera, robotConfig.topics.rgbCamera]);
 
   return (
     <canvas

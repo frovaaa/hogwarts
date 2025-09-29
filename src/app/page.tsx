@@ -12,13 +12,13 @@ import {
   Grid2 as Grid,
 } from '@mui/material';
 import JoystickControl from '@/components/JoystickControl';
-// import CameraFeed from '@/components/CameraFeed';
-// import TopicsList from '@/components/TopicsList';
+import CameraFeed from '@/components/CameraFeed';
+import TopicsList from '@/components/TopicsList';
 import ActionsPanel from '@/components/ActionsPanel';
-// import OdomData from '@/components/OdomData';
-// import OptitrackData from '@/components/OptitrackData';
-// import OdomData from '@/components/OdomData';
-// import ROSLIB from 'roslib';
+import OdomData from '@/components/OdomData';
+import ExternalPoseData from '@/components/OptitrackData';
+import RobotSelector from '@/components/RobotSelector';
+import RobotConfigStatus from '@/components/RobotConfigStatus';
 
 export default function Homepage() {
   const rosContext = useContext(RosContext);
@@ -169,15 +169,20 @@ export default function Homepage() {
       )}
       {connected && (
         <Grid container spacing={2}>
-          {/* <Grid size={4}>
-            <Typography variant="h4" gutterBottom>
-              ROS2 Topics
-            </Typography>
-            <TopicsList topics={topics} />
-            <OdomData ros={ros} />
-          </Grid> */}
-          {/* <OptitrackData ros={ros} /> */}
           <Grid size={12}>
+            <RobotSelector />
+            <RobotConfigStatus />
+          </Grid>
+          <Grid size={4}>
+            <Typography variant="h4" gutterBottom>
+              Robot Data
+            </Typography>
+            <TopicsList topics={[]} />
+            <OdomData />
+            {/* Only show external pose data if available */}
+            <ExternalPoseData />
+          </Grid>
+          <Grid size={8}>
             {/* Current Session Indicator */}
             {currentSessionId && (
               <Box mb={2}>
@@ -189,7 +194,7 @@ export default function Homepage() {
               </Box>
             )}
 
-            {/* <CameraFeed ros={ros} /> */}
+            <CameraFeed />
             <ActionsPanel
               ros={ros}
               manualIp={manualIp}
@@ -200,9 +205,8 @@ export default function Homepage() {
               setMoveSpeed={setMoveSpeed}
             />
             <Box display="flex" justifyContent="center" mt={0}>
-              <JoystickControl ros={ros} moveSpeed={moveSpeed} />
+              <JoystickControl moveSpeed={moveSpeed} />
             </Box>
-            {/* <OdomData ros={ros} /> */}
           </Grid>
         </Grid>
       )}
