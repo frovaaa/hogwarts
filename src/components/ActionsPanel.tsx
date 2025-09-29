@@ -813,7 +813,7 @@ export default function ActionsPanel({
         break;
       case MacroScenario.ENCOURAGE_COLLAB:
         ledFeedback('good', 8, 80);
-        rotateOnSpot(2, 2.5);
+        rotateOnSpot(2, robotConfig.movementParams.rotationSpeed);
         playCustomSound(262);
         break;
       case MacroScenario.PLAY_HAPPY_CHIME:
@@ -848,10 +848,13 @@ export default function ActionsPanel({
       //   setTimeout(() => playCustomSound(262), i * 600);
       happyChimeSong();
 
-      rotateOnSpot(2, 2.5);
+      rotateOnSpot(2, robotConfig.movementParams.rotationSpeed);
     }
   };
-  const moveBack = (distance = -0.2, duration = 300) => {
+  const moveBack = (
+    distance = robotConfig.movementParams.backwardDistance, 
+    duration = robotConfig.movementParams.backwardDuration
+  ) => {
     if (!ros) {
       console.error('ROS connection is not available. Cannot move back.');
       return;
@@ -896,7 +899,7 @@ export default function ActionsPanel({
       moveBack();
     } else {
       ledFeedback('bad', 6, 60);
-      moveBack(-0.4, 500); // Go further back and for longer
+      moveBack(robotConfig.movementParams.backwardDistance * 2, robotConfig.movementParams.backwardDuration + 200); // Go further back and for longer
     }
   };
 

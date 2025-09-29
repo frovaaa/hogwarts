@@ -30,11 +30,20 @@ export interface RobotTopicConfig {
   externalPose?: string;
 }
 
+export interface RobotMovementParams {
+  maxLinearSpeed: number;     // m/s
+  maxAngularSpeed: number;    // rad/s  
+  rotationSpeed: number;      // rad/s for feedback rotations
+  backwardDistance: number;   // meters for negative feedback
+  backwardDuration: number;   // milliseconds
+}
+
 export interface RobotConfig {
   name: string;
   displayName: string;
   description: string;
   topics: RobotTopicConfig;
+  movementParams: RobotMovementParams;
   capabilities: {
     hasCamera: boolean;
     hasDepthCamera: boolean;
@@ -63,6 +72,13 @@ export const ROBOT_CONFIGS: Record<string, RobotConfig> = {
       sound: '/robomaster/cmd_sound',
       panic: '/robomaster/panic',
       externalPose: '/optitrack/robomaster_frova'
+    },
+    movementParams: {
+      maxLinearSpeed: 3.5,
+      maxAngularSpeed: 6.0,
+      rotationSpeed: 2.5,      // Current value that works well
+      backwardDistance: -0.2,   // Current value
+      backwardDuration: 300     // Current value
     },
     capabilities: {
       hasCamera: true,
@@ -93,6 +109,13 @@ export const ROBOT_CONFIGS: Record<string, RobotConfig> = {
       imu: '/base_imu',
       laser: '/scan_raw',
       sonar: '/sonar_base'
+    },
+    movementParams: {
+      maxLinearSpeed: 1.0,      // TIAGo is slower and more careful
+      maxAngularSpeed: 1.0,     // Much slower rotation
+      rotationSpeed: 0.8,       // Slower rotation for feedback (was 2.5)
+      backwardDistance: -0.1,   // Shorter backup distance
+      backwardDuration: 500     // Longer duration for smoother movement
     },
     capabilities: {
       hasCamera: true,
