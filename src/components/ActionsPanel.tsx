@@ -14,6 +14,19 @@ import { useExperimentLogger } from '../hooks/useExperimentLogger';
 import { useRosContext } from '../hooks/useRosContext';
 import ExperimentControl from './ExperimentControl';
 
+export interface SectionVisibility {
+  showRobotPosition?: boolean;
+  showExperimentControl?: boolean;
+  showLeds?: boolean;
+  showGripper?: boolean;
+  showArm?: boolean;
+  showFeedback?: boolean;
+  showMacroScenarios?: boolean;
+  showMovement?: boolean;
+  showPanic?: boolean;
+  showSound?: boolean;
+}
+
 interface ActionsPanelProps {
   ros: ROSLIB.Ros | null; // Updated to use ROSLIB.Ros type and allow null
   manualIp: string; // Added manualIp to props
@@ -25,6 +38,7 @@ interface ActionsPanelProps {
   onSessionChange?: (sessionId: string | null) => void; // Added callback for session changes
   moveSpeed: number;
   setMoveSpeed: (v: number) => void;
+  sectionVisibility?: SectionVisibility; // Configuration for which sections to show
 }
 
 // Enum for arm poses
@@ -94,8 +108,23 @@ export default function ActionsPanel({
   onSessionChange,
   moveSpeed,
   setMoveSpeed,
+  sectionVisibility = {},
 }: ActionsPanelProps) {
   const { robotConfig } = useRosContext();
+
+  // Extract section visibility with defaults
+  const {
+    showRobotPosition = false,
+    showExperimentControl = true,
+    showLeds = true,
+    showGripper = true,
+    showArm = true,
+    showFeedback = true,
+    showMacroScenarios = false,
+    showMovement = true,
+    showPanic = true,
+    showSound = true,
+  } = sectionVisibility;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isActionInProgress, setIsActionInProgress] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -227,7 +256,7 @@ export default function ActionsPanel({
     const cmdVelTopic = new ROSLIB.Topic({
       ros: ros,
       name: robotConfig.topics.cmdVel,
-      messageType: 'geometry_msgs/Twist',
+      messageType: 'geometry_msgs/msg/Twist',
     });
 
     let lastCmdTime = Date.now();
@@ -587,68 +616,74 @@ export default function ActionsPanel({
 
   const rotateOnSpot = (cycles: number, angularSpeed: number) => {
     if (!ros) {
-      console.error(
-        'ROS connection is not available. Cannot rotate on the spot.'
-      );
+      console.error('ROS not available');
       return;
     }
 
-    setIsActionInProgress(true); // Disable buttons
+    setIsActionInProgress(true);
+    logMovementEvent('rotate_on_spot', { cycles, angular_speed: angularSpeed });
 
-    // Log the rotation event
-    logMovementEvent('rotate_on_spot', {
-      cycles: cycles,
-      angular_speed: angularSpeed,
-    });
-
-    console.log(`Rotating on the spot for ${cycles} cycles…`);
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
       name: robotConfig.topics.cmdVel,
-      messageType: 'geometry_msgs/Twist',
+      messageType: 'geometry_msgs/msg/Twist',
     });
 
-    const phaseDir = [+1, -1, +1]; // Direction for each phase
-    const phaseTicks = [1, 2, 1]; // Tick duration (each 200ms) for each phase
-    const ticksPerCycle = phaseTicks.reduce((a, b) => a + b, 0);
-    const totalTicks = cycles * ticksPerCycle;
+    // ---- timing from movementParams (fallbacks keep it generic) ----
+    const rateHz = robotConfig.movementParams.wiggleRateHz ?? 30;
+    const dtMs = Math.max(10, Math.round(1000 / rateHz));
+
+    const phase1Sec = robotConfig.movementParams.wigglePhase1 ?? 0.25; // +
+    const phase2Sec = robotConfig.movementParams.wigglePhase2 ?? 0.50; // -
+    const phase3Sec = robotConfig.movementParams.wigglePhase3 ?? 0.25; // +
+
+    // Convert to ticks (ensure >=1)
+    const n1 = Math.max(1, Math.round(phase1Sec * rateHz));
+    const n2 = Math.max(1, Math.round(phase2Sec * rateHz));
+    const n3 = Math.max(1, Math.round(phase3Sec * rateHz));
+
+    const ticksPerCycle = n1 + n2 + n3;
+    const totalTicks = Math.max(1, Math.floor(cycles) * ticksPerCycle);
+
+    // ---- magnitudes: middle scaled so (+M)*n1 + (-αM)*n2 + (+M)*n3 = 0 ----
+    const alpha = (n1 + n3) / n2; // how much bigger the right turn must be
+    const maxW = robotConfig.movementParams.maxAngularSpeed ?? 1.0;
+    const req = Math.abs(angularSpeed);
+    const M = Math.min(req, maxW / Math.max(1, alpha)); // keep within limits
+
+    // constant per-phase velocities (no ramps)
+    const wzP = +M;           // left
+    const wzN = -alpha * M;   // right (bigger magnitude), ensures return to center
 
     let tick = 0;
-    const interval = setInterval(() => {
-      // Determine which phase we're in
-      let phase = 0;
-      let ticksIntoCycle = tick % ticksPerCycle;
-      while (ticksIntoCycle >= phaseTicks[phase]) {
-        ticksIntoCycle -= phaseTicks[phase];
-        phase++;
+    const h = setInterval(() => {
+      const t = tick % ticksPerCycle;
+
+      let wz = 0;
+      if (t < n1) {
+        wz = wzP;                 // phase 1: left
+      } else if (t < n1 + n2) {
+        wz = wzN;                 // phase 2: right (bigger)
+      } else {
+        wz = wzP;                 // phase 3: short left back to center
       }
 
-      const dir = phaseDir[phase];
-      cmdVelTopic.publish(
-        new ROSLIB.Message({
-          linear: { x: 0, y: 0, z: 0 },
-          angular: { x: 0, y: 0, z: dir * angularSpeed },
-        })
-      );
-
-      // Stop immediately after the final tick
-      if (tick === totalTicks - 1) {
-        setTimeout(() => {
-          cmdVelTopic.publish(
-            new ROSLIB.Message({
-              linear: { x: 0, y: 0, z: 0 },
-              angular: { x: 0, y: 0, z: 0 },
-            })
-          );
-          console.log('Rotation completed and robot stopped.');
-          setIsActionInProgress(false); // Re-enable buttons
-        }, 200); // buffer to ensure the last movement gets sent first
-
-        clearInterval(interval);
-      }
+      cmdVelTopic.publish(new ROSLIB.Message({
+        linear: { x: 0, y: 0, z: 0 },
+        angular: { x: 0, y: 0, z: wz },
+      }));
 
       tick++;
-    }, 200); // 200ms per tick
+      if (tick >= totalTicks) {
+        clearInterval(h);
+        // stop cleanly at the very end
+        cmdVelTopic.publish(new ROSLIB.Message({
+          linear: { x: 0, y: 0, z: 0 },
+          angular: { x: 0, y: 0, z: 0 },
+        }));
+        setIsActionInProgress(false);
+      }
+    }, dtMs);
   };
 
   // --- Sound Section ---
@@ -852,38 +887,52 @@ export default function ActionsPanel({
     }
   };
   const moveBack = (
-    distance = robotConfig.movementParams.backwardDistance, 
-    duration = robotConfig.movementParams.backwardDuration
+    distance = robotConfig.movementParams.backwardDistance,   // e.g., -0.1 m
+    speed = Math.min(Math.abs(robotConfig.movementParams.maxLinearSpeed || 0.3), 0.3) // cap to something safe
   ) => {
     if (!ros) {
       console.error('ROS connection is not available. Cannot move back.');
       return;
     }
 
-    // Log the move back event
-    logMovementEvent('move_backward', {
-      distance: distance,
-      duration: duration,
-    });
+    // Ensure speed is positive; we’ll set the sign via direction
+    const v = Math.max(0.05, Math.abs(speed)); // at least 5 cm/s so it’s visible
+    const dir = distance < 0 ? -1 : 1;
+    const durationMs = Math.max(50, Math.round((Math.abs(distance) / v) * 1000));
+    const periodMs = 100; // 10 Hz
+    const ticks = Math.ceil(durationMs / periodMs);
+
+    logMovementEvent('move_backward', { distance, speed: dir * v, duration_ms: durationMs });
 
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
       name: robotConfig.topics.cmdVel,
-      messageType: 'geometry_msgs/Twist',
+      messageType: 'geometry_msgs/msg/Twist',
     });
-    const twist = new ROSLIB.Message({
-      linear: { x: distance, y: 0, z: 0 },
-      angular: { x: 0, y: 0, z: 0 },
-    });
-    cmdVelTopic.publish(twist);
-    setTimeout(() => {
-      const stopTwist = new ROSLIB.Message({
-        linear: { x: 0, y: 0, z: 0 },
-        angular: { x: 0, y: 0, z: 0 },
-      });
-      cmdVelTopic.publish(stopTwist);
-    }, duration);
+
+    let sent = 0;
+    const interval = setInterval(() => {
+      cmdVelTopic.publish(
+        new ROSLIB.Message({
+          linear: { x: dir * v, y: 0, z: 0 },
+          angular: { x: 0, y: 0, z: 0 },
+        })
+      );
+      sent++;
+
+      if (sent >= ticks) {
+        clearInterval(interval);
+        // Send a stop to satisfy the watchdog and avoid drift
+        cmdVelTopic.publish(
+          new ROSLIB.Message({
+            linear: { x: 0, y: 0, z: 0 },
+            angular: { x: 0, y: 0, z: 0 },
+          })
+        );
+      }
+    }, periodMs);
   };
+
   const handleNegativeFeedback = () => {
     // Log the negative feedback event
     logSystemEvent('negative_feedback', {
@@ -899,7 +948,7 @@ export default function ActionsPanel({
       moveBack();
     } else {
       ledFeedback('bad', 6, 60);
-      moveBack(robotConfig.movementParams.backwardDistance * 2, robotConfig.movementParams.backwardDuration + 200); // Go further back and for longer
+      moveBack(robotConfig.movementParams.backwardDistance * 2);
     }
   };
 
@@ -947,7 +996,7 @@ export default function ActionsPanel({
       mt={2}
     >
       {/* Robot Position/TF Section */}
-      <Box minWidth={240}>
+      {showRobotPosition && <Box minWidth={240}>
         <Typography variant="h6">Robot Position (TF)</Typography>
         <Divider sx={{ mb: 1 }} />
         <Card variant="outlined" sx={{ mb: 2 }}>
@@ -1021,20 +1070,20 @@ export default function ActionsPanel({
             )}
           </CardContent>
         </Card>
-      </Box>
+      </Box>}
 
       {/* Experiment Control Section */}
-      <Box minWidth={220}>
+      {showExperimentControl && <Box minWidth={220}>
         <ExperimentControl
           manualIp={manualIp}
           onSessionChange={handleSessionChange}
           exportLogsAsJsonl={exportLogsAsJsonl}
           saveAllLogsToServer={saveAllLogsToServer}
         />
-      </Box>
+      </Box>}
 
       {/* LEDs Section */}
-      <Box minWidth={220}>
+      {showLeds && <Box minWidth={220}>
         <Typography variant="h6">LEDs</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
@@ -1123,9 +1172,9 @@ export default function ActionsPanel({
             onChange={(_, v) => setLedBlinkSpeed(Number(v))}
           />
         </Stack>
-      </Box>
+      </Box>}
       {/* Gripper Section */}
-      <Box minWidth={180}>
+      {showGripper && <Box minWidth={180}>
         <Typography variant="h6">Gripper</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
@@ -1142,9 +1191,9 @@ export default function ActionsPanel({
             Close Gripper
           </Button>
         </Stack>
-      </Box>
+      </Box>}
       {/* Arm/Box Section */}
-      <Box minWidth={200}>
+      {showArm && <Box minWidth={200}>
         <Typography variant="h6">Arm / Box</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
@@ -1161,9 +1210,9 @@ export default function ActionsPanel({
             Close Box
           </Button>
         </Stack>
-      </Box>
+      </Box>}
       {/* Feedback Section */}
-      <Box minWidth={220}>
+      {showFeedback && <Box minWidth={220}>
         <Typography variant="h6">Feedback</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
@@ -1195,9 +1244,9 @@ export default function ActionsPanel({
             ]}
           />
         </Stack>
-      </Box>
+      </Box>}
       {/* Macro Scenarios Section */}
-      <Box minWidth={220}>
+      {showMacroScenarios && <Box minWidth={220}>
         <Typography variant="h6">Macro Scenarios</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
@@ -1226,9 +1275,9 @@ export default function ActionsPanel({
             Encourage Collaboration
           </Button>
         </Stack>
-      </Box>
+      </Box>}
       {/* Movement Section */}
-      <Box minWidth={200}>
+      {showMovement && <Box minWidth={200}>
         <Typography variant="h6">Movement</Typography>
         <Divider sx={{ mb: 1 }} />
         <Stack spacing={1}>
@@ -1260,28 +1309,28 @@ export default function ActionsPanel({
             onChange={(_, v) => setMoveSpeed(Number(v))}
           />
         </Stack>
-        </Box>
+      </Box>}
       {/* )} */}
       {/* Panic Button Section - Only show if robot has panic */}
-      {robotConfig.topics.panic && (
+      {showPanic && robotConfig.topics.panic && (
         <Box minWidth={120}>
-        <Typography variant="h6">Other</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Stack spacing={1}>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={publishPanicSignal}
-            size="large"
-            style={{ height: 200 }}
-          >
-            Panic
-          </Button>
-        </Stack>
+          <Typography variant="h6">Other</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={publishPanicSignal}
+              size="large"
+              style={{ height: 200 }}
+            >
+              Panic
+            </Button>
+          </Stack>
         </Box>
       )}
       {/* Sound Section - Only show if robot has sound */}
-      {robotConfig.capabilities.hasSound && (
+      {showSound && robotConfig.capabilities.hasSound && (
         <Box minWidth={180}>
           <Typography variant="h6">Sounds</Typography>
           <Divider sx={{ mb: 1 }} />

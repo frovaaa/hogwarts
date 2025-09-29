@@ -14,7 +14,7 @@ import {
 import JoystickControl from '@/components/JoystickControl';
 import CameraFeed from '@/components/CameraFeed';
 import TopicsList from '@/components/TopicsList';
-import ActionsPanel from '@/components/ActionsPanel';
+import ActionsPanel, { type SectionVisibility } from '@/components/ActionsPanel';
 import OdomData from '@/components/OdomData';
 import ExternalPoseData from '@/components/OptitrackData';
 import RobotSelector from '@/components/RobotSelector';
@@ -39,6 +39,50 @@ export default function Homepage() {
   // --- MoveSpeed state lifted up ---
   const [moveSpeed, setMoveSpeed] = useState(0.5);
   const [sessionRestored, setSessionRestored] = useState(false);
+
+  // Configure which sections of ActionsPanel to show
+  const sectionVisibility: SectionVisibility = {
+    showRobotPosition: false, // Hide TF position data by default
+    showExperimentControl: true, // Always show experiment controls
+    showLeds: true, // Show LED controls
+    showGripper: true, // Show gripper controls
+    showArm: true, // Show arm controls
+    showFeedback: true, // Show feedback controls
+    showMacroScenarios: false, // Hide macro scenarios by default
+    showMovement: true, // Show movement controls
+    showPanic: true, // Show panic button
+    showSound: true, // Show sound controls
+  };
+
+  // Example configurations for different scenarios:
+  // 
+  // For minimal interface (only essential controls):
+  // const minimalConfig: SectionVisibility = {
+  //   showExperimentControl: true,
+  //   showFeedback: true,
+  //   showPanic: true,
+  // };
+  //
+  // For full debugging interface:
+  // const debugConfig: SectionVisibility = {
+  //   showRobotPosition: true,
+  //   showExperimentControl: true,
+  //   showLeds: true,
+  //   showGripper: true,
+  //   showArm: true,
+  //   showFeedback: true,
+  //   showMacroScenarios: true,
+  //   showMovement: true,
+  //   showPanic: true,
+  //   showSound: true,
+  // };
+  //
+  // For experiment-only interface:
+  // const experimentConfig: SectionVisibility = {
+  //   showExperimentControl: true,
+  //   showFeedback: true,
+  //   showMacroScenarios: true,
+  // };
 
   const ipFromUrl =
     typeof window !== 'undefined' ? window.location.hostname : null;
@@ -141,8 +185,8 @@ export default function Homepage() {
               actionResult.success === null
                 ? 'warning'
                 : actionResult.success
-                ? 'success'
-                : 'error'
+                  ? 'success'
+                  : 'error'
             }
           >
             <Typography variant="body2">{actionResult.message}</Typography>
@@ -173,15 +217,14 @@ export default function Homepage() {
             <RobotSelector />
             <RobotConfigStatus />
           </Grid>
-          <Grid size={4}>
+          {/* <Grid size={4}>
             <Typography variant="h4" gutterBottom>
               Robot Data
             </Typography>
             <TopicsList topics={[]} />
             <OdomData />
-            {/* Only show external pose data if available */}
             <ExternalPoseData />
-          </Grid>
+          </Grid> */}
           <Grid size={8}>
             {/* Current Session Indicator */}
             {currentSessionId && (
@@ -203,6 +246,7 @@ export default function Homepage() {
               onSessionChange={handleSessionChange}
               moveSpeed={moveSpeed}
               setMoveSpeed={setMoveSpeed}
+              sectionVisibility={sectionVisibility}
             />
             <Box display="flex" justifyContent="center" mt={0}>
               <JoystickControl moveSpeed={moveSpeed} />

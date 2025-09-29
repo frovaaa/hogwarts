@@ -2,40 +2,44 @@ export interface RobotTopicConfig {
   // Core navigation topics
   cmdVel: string;
   odom: string;
-  
-  // Camera topics  
+
+  // Camera topics
   rgbCamera?: string;
   depthCamera?: string;
   cameraInfo?: string;
-  
+
   // Sensor topics
   imu?: string;
   laser?: string;
   sonar?: string;
-  
+
   // Manipulation topics (for robots with arms)
   jointStates?: string;
-  
+
   // Action server topics (for robot-specific actions)
   moveRobotAction?: string;
   moveArmAction?: string;
   gripperAction?: string;
-  
+
   // Robot-specific topics
   leds?: string;
   sound?: string;
   panic?: string;
-  
+
   // External tracking (OptiTrack, etc.)
   externalPose?: string;
 }
 
 export interface RobotMovementParams {
-  maxLinearSpeed: number;     // m/s
-  maxAngularSpeed: number;    // rad/s  
-  rotationSpeed: number;      // rad/s for feedback rotations
-  backwardDistance: number;   // meters for negative feedback
-  backwardDuration: number;   // milliseconds
+  maxLinearSpeed: number; // m/s
+  maxAngularSpeed: number; // rad/s
+  rotationSpeed: number; // rad/s for feedback rotations
+  backwardDistance: number; // meters for negative feedback
+  backwardDuration: number; // milliseconds
+  wigglePhase1?: number; // seconds for phase 1 (+)
+  wigglePhase2?: number; // seconds for phase 2 (-)
+  wigglePhase3?: number; // seconds for phase 3 (+)
+  wiggleRateHz?: number; // publish rate
 }
 
 export interface RobotConfig {
@@ -71,14 +75,18 @@ export const ROBOT_CONFIGS: Record<string, RobotConfig> = {
       leds: '/robomaster/leds/color',
       sound: '/robomaster/cmd_sound',
       panic: '/robomaster/panic',
-      externalPose: '/optitrack/robomaster_frova'
+      externalPose: '/optitrack/robomaster_frova',
     },
     movementParams: {
       maxLinearSpeed: 3.5,
       maxAngularSpeed: 6.0,
-      rotationSpeed: 2.5,      // Current value that works well
-      backwardDistance: -0.2,   // Current value
-      backwardDuration: 300     // Current value
+      rotationSpeed: 2.5,
+      backwardDistance: -0.2,
+      backwardDuration: 300,
+      wigglePhase1: 0.25,
+      wigglePhase2: 0.5,
+      wigglePhase3: 0.25,
+      wiggleRateHz: 30,
     },
     capabilities: {
       hasCamera: true,
@@ -88,16 +96,16 @@ export const ROBOT_CONFIGS: Record<string, RobotConfig> = {
       hasSound: true,
       hasLaser: false,
       hasSonar: false,
-      hasIMU: false
-    }
+      hasIMU: false,
+    },
   },
-  
+
   tiago: {
     name: 'tiago',
     displayName: 'TIAGo Robot',
     description: 'PAL Robotics TIAGo mobile manipulator robot',
     topics: {
-      cmdVel: '/cmd_vel',
+      cmdVel: '/mobile_base_controller/cmd_vel_unstamped',
       odom: '/mobile_base_controller/odom',
       rgbCamera: '/head_front_camera/rgb/image_raw',
       depthCamera: '/head_front_camera/depth/image_raw',
@@ -105,17 +113,21 @@ export const ROBOT_CONFIGS: Record<string, RobotConfig> = {
       jointStates: '/joint_states',
       // TIAGo would use different action servers for arm control
       moveArmAction: '/arm_controller/joint_trajectory',
-      gripperAction: '/gripper_controller/joint_trajectory',  
+      gripperAction: '/gripper_controller/joint_trajectory',
       imu: '/base_imu',
       laser: '/scan_raw',
-      sonar: '/sonar_base'
+      sonar: '/sonar_base',
     },
     movementParams: {
-      maxLinearSpeed: 1.0,      // TIAGo is slower and more careful
-      maxAngularSpeed: 1.0,     // Much slower rotation
-      rotationSpeed: 0.8,       // Slower rotation for feedback (was 2.5)
-      backwardDistance: -0.1,   // Shorter backup distance
-      backwardDuration: 500     // Longer duration for smoother movement
+      maxLinearSpeed: 1.0,
+      maxAngularSpeed: 1.0,
+      rotationSpeed: 0.8,
+      backwardDistance: -0.1,
+      backwardDuration: 500,
+      wigglePhase1: 0.70,
+      wigglePhase2: 1.40,
+      wigglePhase3: 0.70,
+      wiggleRateHz: 10,
     },
     capabilities: {
       hasCamera: true,
@@ -125,12 +137,13 @@ export const ROBOT_CONFIGS: Record<string, RobotConfig> = {
       hasSound: false,
       hasLaser: true,
       hasSonar: true,
-      hasIMU: true
-    }
-  }
+      hasIMU: true,
+    },
+  },
 };
 
-export const getDefaultRobotConfig = (): RobotConfig => ROBOT_CONFIGS.robomaster;
+export const getDefaultRobotConfig = (): RobotConfig =>
+  ROBOT_CONFIGS.robomaster;
 
 export const getRobotConfig = (robotName: string): RobotConfig => {
   return ROBOT_CONFIGS[robotName] || getDefaultRobotConfig();
