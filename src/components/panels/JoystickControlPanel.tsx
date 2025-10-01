@@ -104,6 +104,7 @@ export default function JoystickControl({ moveSpeed }: JoystickControlProps) {
         width: '200px',
         height: '200px',
         margin: '0',
+        marginTop: '1.5rem',
         border: '1px solid black',
         position: 'relative',
       }}

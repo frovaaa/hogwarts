@@ -760,12 +760,14 @@ export default function ActionsPanel({
       )}
 
       {/* Robot Arm Panel (Gripper + Arm) */}
-      <RobotArmPanel
-        onArmPose={moveArmPose}
-        onGripper={handleGripper}
-        showGripper={showGripper && robotConfig.capabilities.hasArm}
-        showArm={showArm && robotConfig.capabilities.hasArm}
-      />
+      {robotConfig.capabilities.hasArm && (
+        <RobotArmPanel
+          onArmPose={moveArmPose}
+          onGripper={handleGripper}
+          showGripper={showGripper}
+          showArm={showArm}
+        />
+      )}
 
       {/* Feedback Section */}
       {showFeedback && (
