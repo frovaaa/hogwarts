@@ -13,6 +13,7 @@ import {
   AppBar,
   Toolbar,
   Fab,
+  Slider,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -203,13 +204,23 @@ export default function Homepage() {
                 sessionId={currentSessionId}
                 onActionResult={handleActionResult}
                 onSessionChange={handleSessionChange}
-                moveSpeed={moveSpeed}
-                setMoveSpeed={setMoveSpeed}
                 sectionVisibility={sectionVisibility}
               />
               {robotConfig.capabilities.hasMovement && (
-                <Box display="flex" justifyContent="center" mt={0}>
+                <Box display="flex" flexDirection="column" alignItems="center">
                   <JoystickControl moveSpeed={moveSpeed} />
+                  <Box display="flex" alignItems="center" gap={2} mt={2} width="200px">
+                    <Typography variant="caption" sx={{ minWidth: 'fit-content' }}>Speed:</Typography>
+                    <Slider
+                      min={0.1}
+                      max={1}
+                      step={0.05}
+                      value={moveSpeed}
+                      onChange={(_, v) => setMoveSpeed(Number(v))}
+                      valueLabelDisplay="auto"
+                      valueLabelFormat={(value) => `${(value * 100).toFixed(0)}%`}
+                    />
+                  </Box>
                 </Box>
               )}
             </Grid>

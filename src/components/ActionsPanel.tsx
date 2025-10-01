@@ -36,8 +36,8 @@ interface ActionsPanelProps {
     message: string;
   }) => void; // Added callback for action result
   onSessionChange?: (sessionId: string | null) => void; // Added callback for session changes
-  moveSpeed: number;
-  setMoveSpeed: (v: number) => void;
+  moveSpeed?: number;
+  setMoveSpeed?: (v: number) => void;
   sectionVisibility?: SectionVisibility; // Configuration for which sections to show
 }
 
@@ -557,7 +557,7 @@ export default function ActionsPanel({
       x: pos.x,
       y: pos.y,
       theta: pos.theta,
-      linear_speed: 1.5 * moveSpeed,
+      linear_speed: 1.5 * (moveSpeed || 0.5),
       angular_speed: 1.2,
       robot_world_ref_frame_name: "world",
     };
@@ -1332,14 +1332,7 @@ export default function ActionsPanel({
             >
               Go to Origin
             </Button>
-            <Typography variant="caption">Speed</Typography>
-            <Slider
-              min={0.1}
-              max={1}
-              step={0.05}
-              value={moveSpeed}
-              onChange={(_, v) => setMoveSpeed(Number(v))}
-            />
+
           </Stack>
         </Box>
       )}

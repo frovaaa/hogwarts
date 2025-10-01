@@ -37,7 +37,7 @@ export default function JoystickControl({ moveSpeed }: JoystickControlProps) {
             messageType: "geometry_msgs/Twist",
           });
 
-           
+
           manager.on("start", () => {
             // Log when joystick control starts
             logMovementEvent("joystick_start", {
@@ -104,7 +104,7 @@ export default function JoystickControl({ moveSpeed }: JoystickControlProps) {
       style={{
         width: "200px",
         height: "200px",
-        margin: "5em auto",
+        margin: "0",
         border: "1px solid black",
         position: "relative",
       }}
