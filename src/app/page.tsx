@@ -49,7 +49,7 @@ export default function Homepage() {
   const [moveSpeed, setMoveSpeed] = useState(0.5);
   const [sessionRestored, setSessionRestored] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [cameraVisible, setCameraVisible] = useState(true);
+  const [cameraVisible, setCameraVisible] = useState(false);
 
   // Configure which sections of ActionsPanel to show
   const sectionVisibility: SectionVisibility = {

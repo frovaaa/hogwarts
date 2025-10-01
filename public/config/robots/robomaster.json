@@ -30,6 +30,7 @@
     "hasMovement": true,
     "hasArm": true,
     "hasLeds": true,
-    "hasSound": true
+    "hasSound": true,
+    "hasPanic": true
   }
 }

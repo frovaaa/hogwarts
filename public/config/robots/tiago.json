@@ -25,6 +25,7 @@
     "hasMovement": true,
     "hasArm": true,
     "hasLeds": false,
-    "hasSound": false
+    "hasSound": false,
+    "hasPanic": false
   }
 }

@@ -167,15 +167,18 @@ export default function RobotSelector() {
       { key: "hasArm", label: "Arm", color: "success" as const },
       { key: "hasLeds", label: "LEDs", color: "error" as const },
       { key: "hasSound", label: "Sound", color: "default" as const },
+      { key: "hasPanic", label: "Panic", color: "warning" as const },
     ];
 
     return (
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
         {capabilityList.map(
-          ({ key, label, color }) =>
-            capabilities[key as keyof typeof capabilities] && (
+          ({ key, label, color }) => {
+            const hasCapability = capabilities[key as keyof typeof capabilities];
+            return hasCapability ? (
               <Chip key={key} label={label} color={color} size="small" />
-            ),
+            ) : null;
+          },
         )}
       </Stack>
     );

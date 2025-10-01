@@ -101,6 +101,7 @@ export default function RobotConfigWizard({
       hasArm: false,
       hasLeds: false,
       hasSound: false,
+      hasPanic: false,
     },
   });
 
@@ -133,6 +134,7 @@ export default function RobotConfigWizard({
           hasArm: false,
           hasLeds: false,
           hasSound: false,
+          hasPanic: false,
         },
       });
     }
@@ -254,6 +256,7 @@ export default function RobotConfigWizard({
     }
     if (config.capabilities.hasLeds) required.push("leds");
     if (config.capabilities.hasSound) required.push("sound");
+    if (config.capabilities.hasPanic) required.push("panic");
 
     return required;
   };
@@ -386,6 +389,19 @@ export default function RobotConfigWizard({
                         />
                       }
                       label="Sound/Audio"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={config.capabilities.hasPanic}
+                          onChange={(e) =>
+                            updateCapability("hasPanic", e.target.checked)
+                          }
+                        />
+                      }
+                      label="Panic Button"
                     />
                   </Grid>
                 </Grid>
@@ -592,7 +608,8 @@ export default function RobotConfigWizard({
                 const isRelevant =
                   isRequired ||
                   (topicKey === "rgbCamera" && config.capabilities.hasCamera) ||
-                  ((topicKey === "cmdVel" || topicKey === "odom") && config.capabilities.hasMovement);
+                  ((topicKey === "cmdVel" || topicKey === "odom") && config.capabilities.hasMovement) ||
+                  (topicKey === "panic" && config.capabilities.hasPanic);
 
                 if (!isRelevant) return null;
 

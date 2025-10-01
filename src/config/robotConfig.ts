@@ -44,6 +44,7 @@ export interface RobotConfig {
     hasArm: boolean;
     hasLeds: boolean;
     hasSound: boolean;
+    hasPanic: boolean;
   };
 }
 
@@ -272,6 +273,7 @@ export const getDefaultRobotConfig = (): RobotConfig => {
       hasArm: false,
       hasLeds: false,
       hasSound: false,
+      hasPanic: false,
     },
   };
 };
