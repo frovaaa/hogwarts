@@ -18,6 +18,8 @@ import {
 import {
   Settings as SettingsIcon,
   Close as CloseIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 
 import { useContext, useEffect, useState } from "react";
@@ -47,6 +49,7 @@ export default function Homepage() {
   const [moveSpeed, setMoveSpeed] = useState(0.5);
   const [sessionRestored, setSessionRestored] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [cameraVisible, setCameraVisible] = useState(true);
 
   // Configure which sections of ActionsPanel to show
   const sectionVisibility: SectionVisibility = {
@@ -197,7 +200,21 @@ export default function Homepage() {
                 </Box>
               )}
 
-              {robotConfig.capabilities.hasCamera && <CameraFeed />}
+              {robotConfig.capabilities.hasCamera && (
+                <Box>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                    <Typography variant="h6">Camera Feed</Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => setCameraVisible(!cameraVisible)}
+                      title={cameraVisible ? "Hide Camera" : "Show Camera"}
+                    >
+                      {cameraVisible ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </Box>
+                  {cameraVisible && <CameraFeed />}
+                </Box>
+              )}
               <ActionsPanel
                 ros={ros}
                 manualIp={manualIp}
