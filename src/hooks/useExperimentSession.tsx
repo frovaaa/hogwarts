@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface ExperimentEvent {
   timestamp: string;
@@ -29,8 +29,8 @@ export const useExperimentSession = () => {
   // Load session from localStorage on mount
   useEffect(() => {
     try {
-      const savedSession = localStorage.getItem("experiment-session");
-      const savedEvents = localStorage.getItem("experiment-events");
+      const savedSession = localStorage.getItem('experiment-session');
+      const savedEvents = localStorage.getItem('experiment-events');
 
       if (savedSession) {
         const session = JSON.parse(savedSession);
@@ -44,20 +44,20 @@ export const useExperimentSession = () => {
           }
 
           console.log(
-            "Restored experiment session from localStorage:",
-            session.session_id,
+            'Restored experiment session from localStorage:',
+            session.session_id
           );
         } else {
           // Clean up completed session
-          localStorage.removeItem("experiment-session");
-          localStorage.removeItem("experiment-events");
+          localStorage.removeItem('experiment-session');
+          localStorage.removeItem('experiment-events');
         }
       }
     } catch (error) {
-      console.warn("Failed to restore session from localStorage:", error);
+      console.warn('Failed to restore session from localStorage:', error);
       // Clean up corrupted data
-      localStorage.removeItem("experiment-session");
-      localStorage.removeItem("experiment-events");
+      localStorage.removeItem('experiment-session');
+      localStorage.removeItem('experiment-events');
     }
   }, []);
 
@@ -65,11 +65,11 @@ export const useExperimentSession = () => {
   useEffect(() => {
     if (currentSession && isRecording) {
       localStorage.setItem(
-        "experiment-session",
-        JSON.stringify(currentSession),
+        'experiment-session',
+        JSON.stringify(currentSession)
       );
     } else {
-      localStorage.removeItem("experiment-session");
+      localStorage.removeItem('experiment-session');
     }
   }, [currentSession, isRecording]);
 
@@ -77,8 +77,8 @@ export const useExperimentSession = () => {
   useEffect(() => {
     if (isRecording && eventsRef.current.length > 0) {
       localStorage.setItem(
-        "experiment-events",
-        JSON.stringify(eventsRef.current),
+        'experiment-events',
+        JSON.stringify(eventsRef.current)
       );
     }
   }, [isRecording]);
@@ -103,19 +103,19 @@ export const useExperimentSession = () => {
       eventsRef.current = [];
 
       // Save to localStorage immediately
-      localStorage.setItem("experiment-session", JSON.stringify(newSession));
-      localStorage.removeItem("experiment-events");
+      localStorage.setItem('experiment-session', JSON.stringify(newSession));
+      localStorage.removeItem('experiment-events');
 
       console.log(`Started experiment session: ${sessionId}`);
       return sessionId;
     },
-    [],
+    []
   );
 
   // Stop the current session and save logs
   const stopSession = useCallback(async () => {
     if (!currentSession || !isRecording) {
-      console.warn("No active session to stop");
+      console.warn('No active session to stop');
       return null;
     }
 
@@ -134,8 +134,8 @@ export const useExperimentSession = () => {
     eventsRef.current = [];
 
     // Clean up localStorage
-    localStorage.removeItem("experiment-session");
-    localStorage.removeItem("experiment-events");
+    localStorage.removeItem('experiment-session');
+    localStorage.removeItem('experiment-events');
 
     console.log(`Stopped experiment session: ${finalSession.session_id}`);
     return finalSession;
@@ -149,15 +149,15 @@ export const useExperimentSession = () => {
 
         // Update localStorage with new event
         localStorage.setItem(
-          "experiment-events",
-          JSON.stringify(eventsRef.current),
+          'experiment-events',
+          JSON.stringify(eventsRef.current)
         );
 
         // Also save individual event to JSONL in real-time
         saveEventToFile(event, currentSession.session_id);
       }
     },
-    [isRecording, currentSession],
+    [isRecording, currentSession]
   );
 
   // Save session metadata and all events to JSONL file
@@ -165,7 +165,7 @@ export const useExperimentSession = () => {
     try {
       // Create session summary
       const sessionSummary = {
-        type: "session_summary",
+        type: 'session_summary',
         ...session,
         event_count: session.events.length,
         duration_seconds: session.end_time
@@ -180,19 +180,19 @@ export const useExperimentSession = () => {
         JSON.stringify(sessionSummary),
         ...session.events.map((event) =>
           JSON.stringify({
-            type: "event",
+            type: 'event',
             session_id: session.session_id,
             ...event,
-          }),
+          })
         ),
-      ].join("\n");
+      ].join('\n');
 
       // Create and download file
-      const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+      const blob = new Blob([jsonlContent], { type: 'application/jsonl' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `experiment_${session.session_id}_${new Date().toISOString().split("T")[0]}.jsonl`;
+      a.download = `experiment_${session.session_id}_${new Date().toISOString().split('T')[0]}.jsonl`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -200,13 +200,13 @@ export const useExperimentSession = () => {
 
       console.log(`Saved session ${session.session_id} to JSONL file`);
     } catch (error) {
-      console.error("Failed to save session to file:", error);
+      console.error('Failed to save session to file:', error);
     }
   };
 
   // Save individual event to file (for real-time logging)
   const saveEventToFile = async (event: ExperimentEvent, sessionId: string) => {
-    if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
+    if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
       // Use File System Access API if available (Chrome-based browsers)
       try {
         // This would require setting up a file handle, but for now we'll skip real-time saving

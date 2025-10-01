@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import ROSLIB from "roslib";
+import { useState, useEffect, useCallback } from 'react';
+import ROSLIB from 'roslib';
 
 export interface UseTopicsResult {
   topics: string[];
@@ -13,7 +13,7 @@ export interface UseTopicsResult {
  */
 export function useTopics(
   ros: ROSLIB.Ros | null,
-  autoRefresh = false,
+  autoRefresh = false
 ): UseTopicsResult {
   const [topics, setTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export function useTopics(
   const refreshTopics = useCallback(() => {
     if (!ros) {
       setTopics([]);
-      setError("ROS not connected");
+      setError('ROS not connected');
       return;
     }
 
@@ -32,8 +32,8 @@ export function useTopics(
     // Create a service client to get topic list
     const getTopicsService = new ROSLIB.Service({
       ros: ros,
-      name: "/rosapi/topics",
-      serviceType: "rosapi/Topics",
+      name: '/rosapi/topics',
+      serviceType: 'rosapi/Topics',
     });
 
     const request = new ROSLIB.ServiceRequest({});
@@ -47,30 +47,30 @@ export function useTopics(
             const filteredTopics = result.topics
               .filter(
                 (topic: string) =>
-                  !topic.startsWith("/rosout") &&
-                  !topic.startsWith("/tf") &&
-                  !topic.startsWith("/clock") &&
-                  !topic.startsWith("/rosapi"),
+                  !topic.startsWith('/rosout') &&
+                  !topic.startsWith('/tf') &&
+                  !topic.startsWith('/clock') &&
+                  !topic.startsWith('/rosapi')
               )
               .sort();
 
             setTopics(filteredTopics);
             setError(null);
           } else {
-            setError("Invalid response from topic service");
+            setError('Invalid response from topic service');
           }
         } catch (err) {
-          console.error("Error processing topics response:", err);
-          setError("Error processing topics list");
+          console.error('Error processing topics response:', err);
+          setError('Error processing topics list');
         } finally {
           setLoading(false);
         }
       },
       (error: any) => {
-        console.error("Error fetching topics:", error);
-        setError("Failed to fetch topics. Make sure rosapi is running.");
+        console.error('Error fetching topics:', error);
+        setError('Failed to fetch topics. Make sure rosapi is running.');
         setLoading(false);
-      },
+      }
     );
   }, [ros]);
 
@@ -112,8 +112,8 @@ export function useTopicInfo(ros: ROSLIB.Ros | null, topicName: string) {
 
     const getTopicTypeService = new ROSLIB.Service({
       ros: ros,
-      name: "/rosapi/topic_type",
-      serviceType: "rosapi/TopicType",
+      name: '/rosapi/topic_type',
+      serviceType: 'rosapi/TopicType',
     });
 
     const request = new ROSLIB.ServiceRequest({
@@ -125,23 +125,23 @@ export function useTopicInfo(ros: ROSLIB.Ros | null, topicName: string) {
       (result: any) => {
         try {
           setTopicInfo({
-            type: result.type || "unknown",
+            type: result.type || 'unknown',
             publishers: result.publishers || [],
             subscribers: result.subscribers || [],
           });
           setError(null);
         } catch (err) {
-          console.error("Error processing topic info:", err);
-          setError("Error getting topic information");
+          console.error('Error processing topic info:', err);
+          setError('Error getting topic information');
         } finally {
           setLoading(false);
         }
       },
       (error: any) => {
-        console.error("Error fetching topic info:", error);
-        setError("Failed to fetch topic information");
+        console.error('Error fetching topic info:', error);
+        setError('Failed to fetch topic information');
         setLoading(false);
-      },
+      }
     );
   }, [ros, topicName]);
 
@@ -164,7 +164,7 @@ export function useTopicInfo(ros: ROSLIB.Ros | null, topicName: string) {
  */
 export function useTopicSuggestions(
   availableTopics: string[],
-  robotCapabilities: Record<string, boolean>,
+  robotCapabilities: Record<string, boolean>
 ) {
   const getSuggestionsForTopic = useCallback(
     (topicKey: string): string[] => {
@@ -174,22 +174,22 @@ export function useTopicSuggestions(
 
       // Define common patterns for different topic types
       const patterns: Record<string, string[]> = {
-        cmdVel: ["cmd_vel", "velocity", "command"],
-        odom: ["odom", "odometry"],
-        rgbCamera: ["rgb", "image", "color", "camera"],
-        depthCamera: ["depth", "camera"],
-        cameraInfo: ["camera_info", "info"],
-        imu: ["imu", "inertial"],
-        laser: ["scan", "laser", "lidar"],
-        sonar: ["sonar", "ultrasonic"],
-        jointStates: ["joint_states", "joints"],
-        moveRobotAction: ["move", "navigate", "goal"],
-        moveArmAction: ["arm", "manipulator", "trajectory"],
-        gripperAction: ["gripper", "grasp"],
-        leds: ["led", "light"],
-        sound: ["sound", "audio", "beep"],
-        panic: ["panic", "stop", "emergency"],
-        externalPose: ["pose", "position", "optitrack", "mocap"],
+        cmdVel: ['cmd_vel', 'velocity', 'command'],
+        odom: ['odom', 'odometry'],
+        rgbCamera: ['rgb', 'image', 'color', 'camera'],
+        depthCamera: ['depth', 'camera'],
+        cameraInfo: ['camera_info', 'info'],
+        imu: ['imu', 'inertial'],
+        laser: ['scan', 'laser', 'lidar'],
+        sonar: ['sonar', 'ultrasonic'],
+        jointStates: ['joint_states', 'joints'],
+        moveRobotAction: ['move', 'navigate', 'goal'],
+        moveArmAction: ['arm', 'manipulator', 'trajectory'],
+        gripperAction: ['gripper', 'grasp'],
+        leds: ['led', 'light'],
+        sound: ['sound', 'audio', 'beep'],
+        panic: ['panic', 'stop', 'emergency'],
+        externalPose: ['pose', 'position', 'optitrack', 'mocap'],
       };
 
       const keyPatterns = patterns[topicKey] || [];
@@ -197,7 +197,7 @@ export function useTopicSuggestions(
       // Find topics that match the patterns
       keyPatterns.forEach((pattern) => {
         const matches = availableTopics.filter((topic) =>
-          topic.toLowerCase().includes(pattern.toLowerCase()),
+          topic.toLowerCase().includes(pattern.toLowerCase())
         );
         suggestions.push(...matches);
       });
@@ -226,19 +226,19 @@ export function useTopicSuggestions(
 
       return uniqueSuggestions.slice(0, 10); // Return top 10 suggestions
     },
-    [availableTopics],
+    [availableTopics]
   );
 
   const validateTopic = useCallback(
     (
-      topicName: string,
+      topicName: string
     ): {
       isValid: boolean;
       exists: boolean;
       suggestions: string[];
     } => {
       const exists = availableTopics.includes(topicName);
-      const isValid = topicName.startsWith("/") && topicName.length > 1;
+      const isValid = topicName.startsWith('/') && topicName.length > 1;
 
       let suggestions: string[] = [];
       if (!exists && topicName) {
@@ -246,7 +246,7 @@ export function useTopicSuggestions(
         const similar = availableTopics.filter(
           (topic) =>
             topic.toLowerCase().includes(topicName.toLowerCase()) ||
-            topicName.toLowerCase().includes(topic.toLowerCase()),
+            topicName.toLowerCase().includes(topic.toLowerCase())
         );
         suggestions = similar.slice(0, 5);
       }
@@ -257,7 +257,7 @@ export function useTopicSuggestions(
         suggestions,
       };
     },
-    [availableTopics],
+    [availableTopics]
   );
 
   return {

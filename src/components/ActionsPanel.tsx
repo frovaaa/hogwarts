@@ -1,12 +1,10 @@
-"use client";
+'use client';
 
-import {
-  Box,
-} from "@mui/material";
-import ROSLIB from "roslib";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useExperimentLogger } from "@/hooks/useExperimentLogger";
-import { useRosContext } from "@/hooks/useRosContext";
+import { Box } from '@mui/material';
+import ROSLIB from 'roslib';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useExperimentLogger } from '@/hooks/useExperimentLogger';
+import { useRosContext } from '@/hooks/useRosContext';
 // Import panel components
 import {
   ExperimentControlPanel,
@@ -17,7 +15,7 @@ import {
   RobotArmPanel,
   RobotPositionPanel,
   PanicControlPanel,
-} from "./panels";
+} from './panels';
 
 export interface SectionVisibility {
   showRobotPosition?: boolean;
@@ -58,11 +56,11 @@ export enum GripperState {
 
 // Enum for macro scenarios
 export enum MacroScenario {
-  SHARE_LEGO = "share_lego",
-  PASS_PIECE_KID1 = "pass_piece_kid1",
-  PASS_PIECE_KID2 = "pass_piece_kid2",
-  ENCOURAGE_COLLAB = "encourage_collab",
-  PLAY_HAPPY_CHIME = "play_happy_chime",
+  SHARE_LEGO = 'share_lego',
+  PASS_PIECE_KID1 = 'pass_piece_kid1',
+  PASS_PIECE_KID2 = 'pass_piece_kid2',
+  ENCOURAGE_COLLAB = 'encourage_collab',
+  PLAY_HAPPY_CHIME = 'play_happy_chime',
 }
 
 // Position interface and named positions
@@ -98,9 +96,9 @@ interface IntegratedPosition {
 }
 
 export const Positions: Record<string, Position> = {
-  KID1: { x: 0.5, y: 0.5, theta: 0.0, label: "kid1" },
-  KID2: { x: 0.5, y: -0.5, theta: 0.0, label: "kid2" },
-  ORIGIN: { x: 0.0, y: 0.0, theta: 0.0, label: "origin" },
+  KID1: { x: 0.5, y: 0.5, theta: 0.0, label: 'kid1' },
+  KID2: { x: 0.5, y: -0.5, theta: 0.0, label: 'kid2' },
+  ORIGIN: { x: 0.0, y: 0.0, theta: 0.0, label: 'origin' },
 };
 
 export default function ActionsPanel({
@@ -170,24 +168,24 @@ export default function ActionsPanel({
       // Pass the session change up to the parent component
       onSessionChange?.(sessionId);
     },
-    [clearLogs, onSessionChange],
+    [clearLogs, onSessionChange]
   );
 
   // TF listener effect
   useEffect(() => {
     if (!ros) {
-      console.log("ROS connection is null/undefined");
+      console.log('ROS connection is null/undefined');
       setTfConnected(false);
       return;
     }
 
-    console.log("Setting up TF subscription, ROS connected:", ros.isConnected);
+    console.log('Setting up TF subscription, ROS connected:', ros.isConnected);
 
     // Subscribe directly to /tf topic instead of using TFClient
     const tfTopic = new ROSLIB.Topic({
       ros: ros,
-      name: "/tf",
-      messageType: "tf2_msgs/TFMessage",
+      name: '/tf',
+      messageType: 'tf2_msgs/TFMessage',
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -197,8 +195,8 @@ export default function ActionsPanel({
         const baseLinkTransform = message.transforms.find(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (transform: any) =>
-            transform.child_frame_id === "robomaster/base_link" &&
-            transform.header.frame_id === "robomaster/odom",
+            transform.child_frame_id === 'robomaster/base_link' &&
+            transform.header.frame_id === 'robomaster/odom'
         );
 
         if (baseLinkTransform) {
@@ -228,7 +226,7 @@ export default function ActionsPanel({
     return () => {
       if (tfTopic) {
         tfTopic.unsubscribe();
-        console.log("TF subscription cleaned up");
+        console.log('TF subscription cleaned up');
       }
       // Reset connection state when cleaning up
       setTfConnected(false);
@@ -243,13 +241,13 @@ export default function ActionsPanel({
       return;
     }
 
-    console.log("Setting up cmd_vel subscription for position integration");
+    console.log('Setting up cmd_vel subscription for position integration');
 
     // Subscribe to cmd_vel to track intended movements
     const cmdVelTopic = new ROSLIB.Topic({
       ros: ros,
       name: robotConfig.topics.cmdVel,
-      messageType: "geometry_msgs/msg/Twist",
+      messageType: 'geometry_msgs/msg/Twist',
     });
 
     let lastCmdTime = Date.now();
@@ -292,7 +290,7 @@ export default function ActionsPanel({
     return () => {
       if (cmdVelTopic) {
         cmdVelTopic.unsubscribe();
-        console.log("cmd_vel subscription cleaned up");
+        console.log('cmd_vel subscription cleaned up');
       }
     };
   }, [ros, robotConfig.topics.cmdVel]);
@@ -310,7 +308,7 @@ export default function ActionsPanel({
         // If robot moved significantly via navigation, reset integrated position
         if (distance > 0.1) {
           console.log(
-            "Large odometry change detected, resetting integrated position",
+            'Large odometry change detected, resetting integrated position'
           );
           integratedPositionRef.current = {
             x: currentOdom.x,
@@ -329,18 +327,18 @@ export default function ActionsPanel({
   const callGenericAction = async (
     actionName: string,
     actionType: string,
-    goal: Record<string, unknown>,
+    goal: Record<string, unknown>
   ) => {
     console.log(
       `Calling generic action: ${actionName}, Type: ${actionType}, Goal:`,
-      goal,
+      goal
     );
     setIsActionInProgress(true);
 
     // Log the generic action before execution
     const actionCategory = getActionCategory(actionName);
     const eventLogger = getEventLogger(actionCategory);
-    eventLogger("generic_action", {
+    eventLogger('generic_action', {
       action_name: actionName,
       action_type: actionType,
       goal: goal,
@@ -348,9 +346,9 @@ export default function ActionsPanel({
 
     try {
       const response = await fetch(`http://${manualIp}:4000/generic-action`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           actionName,
@@ -363,7 +361,7 @@ export default function ActionsPanel({
         const errorText = await response.text();
         console.error(
           `Error calling action ${actionName} (${actionType}). Status: ${response.status}`,
-          errorText,
+          errorText
         );
         onActionResult?.({
           success: false,
@@ -371,7 +369,7 @@ export default function ActionsPanel({
         });
 
         // Log the failure
-        eventLogger("generic_action_failed", {
+        eventLogger('generic_action_failed', {
           action_name: actionName,
           action_type: actionType,
           goal: goal,
@@ -392,7 +390,7 @@ export default function ActionsPanel({
       });
 
       // Log the success/failure result
-      eventLogger("generic_action_completed", {
+      eventLogger('generic_action_completed', {
         action_name: actionName,
         action_type: actionType,
         goal: goal,
@@ -402,7 +400,7 @@ export default function ActionsPanel({
     } catch (err) {
       console.error(
         `API call error for action ${actionName} (${actionType}):`,
-        err,
+        err
       );
       onActionResult?.({
         success: false,
@@ -410,7 +408,7 @@ export default function ActionsPanel({
       });
 
       // Log the error
-      eventLogger("generic_action_error", {
+      eventLogger('generic_action_error', {
         action_name: actionName,
         action_type: actionType,
         goal: goal,
@@ -423,27 +421,27 @@ export default function ActionsPanel({
 
   // Helper to determine action category for logging
   const getActionCategory = (actionName: string): string => {
-    if (actionName.includes("sound")) return "sound";
-    if (actionName.includes("led")) return "led";
-    if (actionName.includes("gripper")) return "gripper";
-    if (actionName.includes("arm")) return "arm";
-    if (actionName.includes("move_robot") || actionName.includes("move"))
-      return "movement";
-    return "system";
+    if (actionName.includes('sound')) return 'sound';
+    if (actionName.includes('led')) return 'led';
+    if (actionName.includes('gripper')) return 'gripper';
+    if (actionName.includes('arm')) return 'arm';
+    if (actionName.includes('move_robot') || actionName.includes('move'))
+      return 'movement';
+    return 'system';
   };
 
   // Helper to get the right event logger based on category
   const getEventLogger = (category: string) => {
     switch (category) {
-      case "movement":
+      case 'movement':
         return logMovementEvent;
-      case "arm":
+      case 'arm':
         return logArmEvent;
-      case "gripper":
+      case 'gripper':
         return logGripperEvent;
-      case "led":
+      case 'led':
         return logLedEvent;
-      case "sound":
+      case 'sound':
         return logSoundEvent;
       default:
         return logSystemEvent;
@@ -453,18 +451,18 @@ export default function ActionsPanel({
   // Movement functions
   const moveToPosition = async (pos: Position) => {
     if (!robotConfig.topics.moveRobotAction) {
-      console.warn("Robot does not support move robot action");
+      console.warn('Robot does not support move robot action');
       return;
     }
     const actionName = robotConfig.topics.moveRobotAction;
-    const actionType = "robomaster_hri_msgs/action/MoveRobotWorldRef";
+    const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
     const goal = {
       x: pos.x,
       y: pos.y,
       theta: pos.theta,
       linear_speed: 1.5 * 0.5, // Default speed since we removed moveSpeed
       angular_speed: 1.2,
-      robot_world_ref_frame_name: "world",
+      robot_world_ref_frame_name: 'world',
     };
     console.log(`Initiating move to ${pos.label}...`);
     onActionResult?.({ success: null, message: `Moving to ${pos.label}...` });
@@ -474,11 +472,11 @@ export default function ActionsPanel({
   // Arm control functions
   const moveArmPose = async (poseType: ArmPose) => {
     if (!robotConfig.capabilities.hasArm || !robotConfig.topics.moveArmAction) {
-      console.warn("Robot does not support arm control");
+      console.warn('Robot does not support arm control');
       return;
     }
     const actionName = robotConfig.topics.moveArmAction;
-    const actionType = "robomaster_hri_msgs/action/MoveArmPose";
+    const actionType = 'robomaster_hri_msgs/action/MoveArmPose';
     const goal = { pose_type: poseType };
 
     await callGenericAction(actionName, actionType, goal);
@@ -487,11 +485,11 @@ export default function ActionsPanel({
   // Gripper control functions
   const handleGripper = async (targetState: GripperState) => {
     if (!robotConfig.capabilities.hasArm || !robotConfig.topics.gripperAction) {
-      console.warn("Robot does not support gripper control");
+      console.warn('Robot does not support gripper control');
       return;
     }
     const actionName = robotConfig.topics.gripperAction;
-    const actionType = "robomaster_msgs/action/GripperControl";
+    const actionType = 'robomaster_msgs/action/GripperControl';
     const goal = {
       target_state: targetState,
       power: gripperPower,
@@ -502,17 +500,17 @@ export default function ActionsPanel({
   // Feedback functions
   const rotateOnSpot = (cycles: number, angularSpeed: number) => {
     if (!ros) {
-      console.error("ROS not available");
+      console.error('ROS not available');
       return;
     }
 
     setIsActionInProgress(true);
-    logMovementEvent("rotate_on_spot", { cycles, angular_speed: angularSpeed });
+    logMovementEvent('rotate_on_spot', { cycles, angular_speed: angularSpeed });
 
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
       name: robotConfig.topics.cmdVel,
-      messageType: "geometry_msgs/msg/Twist",
+      messageType: 'geometry_msgs/msg/Twist',
     });
 
     // Use movement params from robot config
@@ -556,7 +554,7 @@ export default function ActionsPanel({
         new ROSLIB.Message({
           linear: { x: 0, y: 0, z: 0 },
           angular: { x: 0, y: 0, z: wz },
-        }),
+        })
       );
 
       tick++;
@@ -566,7 +564,7 @@ export default function ActionsPanel({
           new ROSLIB.Message({
             linear: { x: 0, y: 0, z: 0 },
             angular: { x: 0, y: 0, z: 0 },
-          }),
+          })
         );
         setIsActionInProgress(false);
       }
@@ -577,11 +575,11 @@ export default function ActionsPanel({
     distance = robotConfig.movementParams.backwardDistance,
     speed = Math.min(
       Math.abs(robotConfig.movementParams.maxLinearSpeed || 0.3),
-      0.3,
-    ),
+      0.3
+    )
   ) => {
     if (!ros) {
-      console.error("ROS connection is not available. Cannot move back.");
+      console.error('ROS connection is not available. Cannot move back.');
       return;
     }
 
@@ -589,12 +587,12 @@ export default function ActionsPanel({
     const dir = distance < 0 ? -1 : 1;
     const durationMs = Math.max(
       50,
-      Math.round((Math.abs(distance) / v) * 1000),
+      Math.round((Math.abs(distance) / v) * 1000)
     );
     const periodMs = 100;
     const ticks = Math.ceil(durationMs / periodMs);
 
-    logMovementEvent("move_backward", {
+    logMovementEvent('move_backward', {
       distance,
       speed: dir * v,
       duration_ms: durationMs,
@@ -603,7 +601,7 @@ export default function ActionsPanel({
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
       name: robotConfig.topics.cmdVel,
-      messageType: "geometry_msgs/msg/Twist",
+      messageType: 'geometry_msgs/msg/Twist',
     });
 
     let sent = 0;
@@ -612,7 +610,7 @@ export default function ActionsPanel({
         new ROSLIB.Message({
           linear: { x: dir * v, y: 0, z: 0 },
           angular: { x: 0, y: 0, z: 0 },
-        }),
+        })
       );
       sent++;
 
@@ -622,16 +620,16 @@ export default function ActionsPanel({
           new ROSLIB.Message({
             linear: { x: 0, y: 0, z: 0 },
             angular: { x: 0, y: 0, z: 0 },
-          }),
+          })
         );
       }
     }, periodMs);
   };
 
   const handlePositiveFeedback = () => {
-    logSystemEvent("positive_feedback", {
+    logSystemEvent('positive_feedback', {
       feedback_level: feedbackLevel,
-      actions_triggered: getFeedbackActions(feedbackLevel, "positive"),
+      actions_triggered: getFeedbackActions(feedbackLevel, 'positive'),
     });
 
     if (feedbackLevel === 1) {
@@ -645,9 +643,9 @@ export default function ActionsPanel({
   };
 
   const handleNegativeFeedback = () => {
-    logSystemEvent("negative_feedback", {
+    logSystemEvent('negative_feedback', {
       feedback_level: feedbackLevel,
-      actions_triggered: getFeedbackActions(feedbackLevel, "negative"),
+      actions_triggered: getFeedbackActions(feedbackLevel, 'negative'),
     });
 
     if (feedbackLevel === 1) {
@@ -662,40 +660,40 @@ export default function ActionsPanel({
   // Helper function to describe feedback actions
   const getFeedbackActions = (
     level: number,
-    type: "positive" | "negative",
+    type: 'positive' | 'negative'
   ): string[] => {
-    if (type === "positive") {
+    if (type === 'positive') {
       switch (level) {
         case 1:
-          return ["led_blink_green_4x"];
+          return ['led_blink_green_4x'];
         case 2:
-          return ["led_blink_green_6x", "sound_beep_3x"];
+          return ['led_blink_green_6x', 'sound_beep_3x'];
         case 3:
           return [
-            "led_blink_green_8x",
-            "happy_chime_sequence",
-            "rotate_2_cycles",
+            'led_blink_green_8x',
+            'happy_chime_sequence',
+            'rotate_2_cycles',
           ];
         default:
-          return ["unknown"];
+          return ['unknown'];
       }
     } else {
       switch (level) {
         case 1:
-          return ["led_blink_red_2x"];
+          return ['led_blink_red_2x'];
         case 2:
-          return ["led_blink_red_4x", "move_back_0.2m"];
+          return ['led_blink_red_4x', 'move_back_0.2m'];
         case 3:
-          return ["led_blink_red_6x", "move_back_0.4m"];
+          return ['led_blink_red_6x', 'move_back_0.4m'];
         default:
-          return ["unknown"];
+          return ['unknown'];
       }
     }
   };
 
   // Macro scenario handler
   const handleMacro = async (macro: MacroScenario) => {
-    logMacroEvent("execute_macro", {
+    logMacroEvent('execute_macro', {
       macro_name: macro,
       macro_type: macro,
     });
@@ -730,11 +728,11 @@ export default function ActionsPanel({
 
   return (
     <Box
-      display="flex"
-      flexDirection="row"
+      display='flex'
+      flexDirection='row'
       gap={4}
-      justifyContent="center"
-      alignItems="flex-start"
+      justifyContent='center'
+      alignItems='flex-start'
       mt={2}
     >
       {/* Robot Position/TF Section */}
@@ -758,10 +756,7 @@ export default function ActionsPanel({
 
       {/* LEDs Section */}
       {showLeds && robotConfig.capabilities.hasLeds && (
-        <LEDControlPanel
-          ros={ros}
-          logLedEvent={logLedEvent}
-        />
+        <LEDControlPanel ros={ros} logLedEvent={logLedEvent} />
       )}
 
       {/* Robot Arm Panel (Gripper + Arm) */}
@@ -784,26 +779,17 @@ export default function ActionsPanel({
 
       {/* Movement Section */}
       {showMovement && robotConfig.capabilities.hasMovement && (
-        <MovementControlPanel
-          moveToPosition={moveToPosition}
-        />
+        <MovementControlPanel moveToPosition={moveToPosition} />
       )}
 
       {/* Panic Button Section */}
       {showPanic && (
-        <PanicControlPanel
-          ros={ros}
-          logSystemEvent={logSystemEvent}
-        />
+        <PanicControlPanel ros={ros} logSystemEvent={logSystemEvent} />
       )}
 
       {/* Sound Section */}
       {showSound && (
-        <SoundControlPanel
-          ros={ros}
-          logSoundEvent={logSoundEvent}
-          onMacro={handleMacro}
-        />
+        <SoundControlPanel ros={ros} logSoundEvent={logSoundEvent} />
       )}
     </Box>
   );

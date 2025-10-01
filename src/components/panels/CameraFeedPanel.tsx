@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import ROSLIB from "roslib";
-import { useRosContext } from "@/hooks/useRosContext";
+import { useEffect, useRef } from 'react';
+import ROSLIB from 'roslib';
+import { useRosContext } from '@/hooks/useRosContext';
 
 export default function CameraFeed() {
   const { ros, robotConfig } = useRosContext();
@@ -17,14 +17,14 @@ export default function CameraFeed() {
       const imageTopic = new ROSLIB.Topic({
         ros: ros,
         name: robotConfig.topics.rgbCamera,
-        messageType: "sensor_msgs/Image",
+        messageType: 'sensor_msgs/Image',
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       imageTopic.subscribe((message: any) => {
         if (canvasRef.current) {
           const canvas = canvasRef.current;
-          const context = canvas.getContext("2d");
+          const context = canvas.getContext('2d');
           if (context && message.data) {
             const { width, height, encoding } = message;
 
@@ -35,7 +35,7 @@ export default function CameraFeed() {
               buffer[i] = rawData.charCodeAt(i);
             }
 
-            if (encoding === "bgr8") {
+            if (encoding === 'bgr8') {
               // Convert BGR to RGBA
               const rgbaData = new Uint8ClampedArray(width * height * 4);
               for (let i = 0; i < width * height; i++) {
@@ -68,10 +68,10 @@ export default function CameraFeed() {
     <canvas
       ref={canvasRef}
       style={{
-        width: "100%",
-        maxHeight: "400px",
-        margin: "20px auto",
-        display: "block",
+        width: '100%',
+        maxHeight: '400px',
+        margin: '20px auto',
+        display: 'block',
       }}
     />
   );

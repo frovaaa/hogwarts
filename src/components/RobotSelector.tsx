@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   FormControl,
   InputLabel,
@@ -19,21 +19,21 @@ import {
   DialogTitle,
   Alert,
   Snackbar,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Refresh as RefreshIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 import {
   RobotConfig,
   saveRobotConfig,
   deleteRobotConfig,
-} from "../config/robotConfig";
-import { useRosContext } from "../hooks/useRosContext";
-import { useTopics } from "../hooks/useTopics";
-import RobotConfigWizard from "./RobotConfigWizard";
+} from '../config/robotConfig';
+import { useRosContext } from '../hooks/useRosContext';
+import { useTopics } from '../hooks/useTopics';
+import RobotConfigWizard from './RobotConfigWizard';
 
 export default function RobotSelector() {
   const {
@@ -49,15 +49,15 @@ export default function RobotSelector() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<RobotConfig | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [configToDelete, setConfigToDelete] = useState<string>("");
+  const [configToDelete, setConfigToDelete] = useState<string>('');
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
-    severity: "success" | "error";
+    severity: 'success' | 'error';
   }>({
     open: false,
-    message: "",
-    severity: "success",
+    message: '',
+    severity: 'success',
   });
 
   const handleRobotChange = (event: SelectChangeEvent) => {
@@ -97,19 +97,19 @@ export default function RobotSelector() {
 
         setSnackbar({
           open: true,
-          message: "Robot configuration deleted successfully",
-          severity: "success",
+          message: 'Robot configuration deleted successfully',
+          severity: 'success',
         });
       } else {
         setSnackbar({
           open: true,
-          message: "Error deleting robot configuration",
-          severity: "error",
+          message: 'Error deleting robot configuration',
+          severity: 'error',
         });
       }
     }
     setDeleteDialogOpen(false);
-    setConfigToDelete("");
+    setConfigToDelete('');
   };
 
   const handleSaveRobot = async (config: RobotConfig): Promise<boolean> => {
@@ -124,17 +124,17 @@ export default function RobotSelector() {
       setSnackbar({
         open: true,
         message: editingConfig
-          ? "Robot configuration updated successfully"
-          : "Robot configuration created successfully",
-        severity: "success",
+          ? 'Robot configuration updated successfully'
+          : 'Robot configuration created successfully',
+        severity: 'success',
       });
 
       return true;
     } else {
       setSnackbar({
         open: true,
-        message: "Error saving robot configuration",
-        severity: "error",
+        message: 'Error saving robot configuration',
+        severity: 'error',
       });
       return false;
     }
@@ -146,84 +146,82 @@ export default function RobotSelector() {
 
       setSnackbar({
         open: true,
-        message: "Robot configurations refreshed",
-        severity: "success",
+        message: 'Robot configurations refreshed',
+        severity: 'success',
       });
     } catch (error) {
       setSnackbar({
         open: true,
-        message: "Error refreshing configurations",
-        severity: "error",
+        message: 'Error refreshing configurations',
+        severity: 'error',
       });
     }
   };
 
   const renderCapabilities = (
-    capabilities: typeof robotConfig.capabilities,
+    capabilities: typeof robotConfig.capabilities
   ) => {
     const capabilityList = [
-      { key: "hasMovement", label: "Movement", color: "info" as const },
-      { key: "hasCamera", label: "RGB Camera", color: "primary" as const },
-      { key: "hasArm", label: "Arm", color: "success" as const },
-      { key: "hasLeds", label: "LEDs", color: "error" as const },
-      { key: "hasSound", label: "Sound", color: "default" as const },
-      { key: "hasPanic", label: "Panic", color: "warning" as const },
+      { key: 'hasMovement', label: 'Movement', color: 'info' as const },
+      { key: 'hasCamera', label: 'RGB Camera', color: 'primary' as const },
+      { key: 'hasArm', label: 'Arm', color: 'success' as const },
+      { key: 'hasLeds', label: 'LEDs', color: 'error' as const },
+      { key: 'hasSound', label: 'Sound', color: 'default' as const },
+      { key: 'hasPanic', label: 'Panic', color: 'warning' as const },
     ];
 
     return (
-      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-        {capabilityList.map(
-          ({ key, label, color }) => {
-            const hasCapability = capabilities[key as keyof typeof capabilities];
-            return hasCapability ? (
-              <Chip key={key} label={label} color={color} size="small" />
-            ) : null;
-          },
-        )}
+      <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
+        {capabilityList.map(({ key, label, color }) => {
+          const hasCapability = capabilities[key as keyof typeof capabilities];
+          return hasCapability ? (
+            <Chip key={key} label={label} color={color} size='small' />
+          ) : null;
+        })}
       </Stack>
     );
   };
 
   const canDelete =
-    robotConfig.name !== "robomaster" && robotConfig.name !== "tiago";
+    robotConfig.name !== 'robomaster' && robotConfig.name !== 'tiago';
   const canEdit = true; // Allow editing of all configs
 
   return (
     <>
       <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
         <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
+          display='flex'
+          alignItems='center'
+          justifyContent='space-between'
           mb={2}
         >
-          <Typography variant="h6">Robot Configuration</Typography>
-          <Box display="flex" gap={1}>
+          <Typography variant='h6'>Robot Configuration</Typography>
+          <Box display='flex' gap={1}>
             <IconButton
-              size="small"
+              size='small'
               onClick={handleRefreshConfigs}
-              title="Refresh Configurations"
+              title='Refresh Configurations'
             >
               <RefreshIcon />
             </IconButton>
             <Button
-              size="small"
+              size='small'
               startIcon={<AddIcon />}
               onClick={handleCreateRobot}
-              variant="outlined"
+              variant='outlined'
             >
               New Robot
             </Button>
           </Box>
         </Box>
 
-        <FormControl fullWidth margin="normal">
-          <InputLabel id="robot-select-label">Robot Type</InputLabel>
+        <FormControl fullWidth margin='normal'>
+          <InputLabel id='robot-select-label'>Robot Type</InputLabel>
           <Select
-            labelId="robot-select-label"
-            id="robot-select"
+            labelId='robot-select-label'
+            id='robot-select'
             value={robotConfig.name}
-            label="Robot Type"
+            label='Robot Type'
             onChange={handleRobotChange}
           >
             {Object.values(availableConfigs).map((config) => (
@@ -236,28 +234,28 @@ export default function RobotSelector() {
 
         <Box mt={2}>
           <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
+            display='flex'
+            alignItems='center'
+            justifyContent='space-between'
           >
-            <Typography variant="subtitle2" gutterBottom>
+            <Typography variant='subtitle2' gutterBottom>
               Current Robot: <strong>{robotConfig.displayName}</strong>
             </Typography>
-            <Box display="flex" gap={1}>
+            <Box display='flex' gap={1}>
               {canEdit && (
                 <IconButton
-                  size="small"
+                  size='small'
                   onClick={handleEditRobot}
-                  title="Edit Configuration"
+                  title='Edit Configuration'
                 >
                   <EditIcon />
                 </IconButton>
               )}
               {canDelete && (
                 <IconButton
-                  size="small"
+                  size='small'
                   onClick={handleDeleteRobot}
-                  title="Delete Configuration"
+                  title='Delete Configuration'
                 >
                   <DeleteIcon />
                 </IconButton>
@@ -265,11 +263,11 @@ export default function RobotSelector() {
             </Box>
           </Box>
 
-          <Typography variant="body2" color="text.secondary" gutterBottom>
+          <Typography variant='body2' color='text.secondary' gutterBottom>
             {robotConfig.description}
           </Typography>
 
-          <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+          <Typography variant='subtitle2' gutterBottom sx={{ mt: 1 }}>
             Capabilities:
           </Typography>
           {renderCapabilities(robotConfig.capabilities)}
@@ -300,8 +298,8 @@ export default function RobotSelector() {
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={confirmDeleteRobot}
-            color="error"
-            variant="contained"
+            color='error'
+            variant='contained'
           >
             Delete
           </Button>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Box,
@@ -7,7 +7,7 @@ import {
   Stack,
   Card,
   CardContent,
-} from "@mui/material";
+} from '@mui/material';
 
 interface TFData {
   position: {
@@ -30,10 +30,10 @@ interface RobotPositionPanelProps {
   rosConnected: boolean;
 }
 
-export default function RobotPositionPanel({ 
-  tfConnected, 
-  tfData, 
-  rosConnected 
+export default function RobotPositionPanel({
+  tfConnected,
+  tfData,
+  rosConnected,
 }: RobotPositionPanelProps) {
   // Helper function to convert quaternion to euler angles (for display)
   const quaternionToEuler = (q: {
@@ -66,73 +66,72 @@ export default function RobotPositionPanel({
 
   return (
     <Box minWidth={240}>
-      <Typography variant="h6">Robot Position (TF)</Typography>
+      <Typography variant='h6'>Robot Position (TF)</Typography>
       <Divider sx={{ mb: 1 }} />
-      <Card variant="outlined" sx={{ mb: 2 }}>
+      <Card variant='outlined' sx={{ mb: 2 }}>
         <CardContent sx={{ padding: 1 }}>
           {tfConnected && tfData ? (
             <Stack spacing={1}>
-              <Typography variant="caption" color="success.main">
+              <Typography variant='caption' color='success.main'>
                 ✓ Connected to /tf
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant='caption' color='text.secondary'>
                 Frame: robomaster/base_link → robomaster/odom
               </Typography>
-              <Typography variant="body2">
+              <Typography variant='body2'>
                 <strong>Position:</strong>
               </Typography>
-              <Typography variant="caption" component="div">
+              <Typography variant='caption' component='div'>
                 X: {tfData.position.x.toFixed(3)} m
               </Typography>
-              <Typography variant="caption" component="div">
+              <Typography variant='caption' component='div'>
                 Y: {tfData.position.y.toFixed(3)} m
               </Typography>
-              <Typography variant="caption" component="div">
+              <Typography variant='caption' component='div'>
                 Z: {tfData.position.z.toFixed(3)} m
               </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
+              <Typography variant='body2' sx={{ mt: 1 }}>
                 <strong>Orientation (RPY):</strong>
               </Typography>
               {(() => {
                 const euler = quaternionToEuler(tfData.orientation);
                 return (
                   <>
-                    <Typography variant="caption" component="div">
+                    <Typography variant='caption' component='div'>
                       Roll: {euler.roll.toFixed(1)}°
                     </Typography>
-                    <Typography variant="caption" component="div">
+                    <Typography variant='caption' component='div'>
                       Pitch: {euler.pitch.toFixed(1)}°
                     </Typography>
-                    <Typography variant="caption" component="div">
+                    <Typography variant='caption' component='div'>
                       Yaw: {euler.yaw.toFixed(1)}°
                     </Typography>
                   </>
                 );
               })()}
               <Typography
-                variant="caption"
-                color="text.secondary"
+                variant='caption'
+                color='text.secondary'
                 sx={{ mt: 1 }}
               >
-                Last update:{" "}
-                {new Date(tfData.timestamp).toLocaleTimeString()}
+                Last update: {new Date(tfData.timestamp).toLocaleTimeString()}
               </Typography>
             </Stack>
           ) : (
-            <Stack spacing={1} alignItems="center">
-              <Typography variant="caption" color="error.main">
+            <Stack spacing={1} alignItems='center'>
+              <Typography variant='caption' color='error.main'>
                 ✗ No TF data
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant='caption' color='text.secondary'>
                 Waiting for /tf messages...
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                ROS Connected: {rosConnected ? "✓" : "✗"}
+              <Typography variant='caption' color='text.secondary'>
+                ROS Connected: {rosConnected ? '✓' : '✗'}
               </Typography>
               <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.7rem" }}
+                variant='caption'
+                color='text.secondary'
+                sx={{ fontSize: '0.7rem' }}
               >
                 Looking for: robomaster/base_link
               </Typography>

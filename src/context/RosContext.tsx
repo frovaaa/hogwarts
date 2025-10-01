@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { createContext, useEffect, useState, useMemo } from "react";
-import ROSLIB from "roslib";
+import React, { createContext, useEffect, useState, useMemo } from 'react';
+import ROSLIB from 'roslib';
 import {
   RobotConfig,
   getDefaultRobotConfig,
@@ -9,7 +9,7 @@ import {
   loadAllRobotConfigs,
   loadCustomRobotConfigs,
   getAllRobotConfigs,
-} from "../config/robotConfig";
+} from '../config/robotConfig';
 
 interface RosContextType {
   connected: boolean;
@@ -32,9 +32,9 @@ export const RosContext = createContext<RosContextType | undefined>(undefined);
 export const RosProvider = ({ children }: { children: React.ReactNode }) => {
   const [ros, setRos] = useState<ROSLIB.Ros | null>(null);
   const [connected, setConnected] = useState(false);
-  const [rosIp, setRosIp] = useState<string>(""); // Initialize as an empty string
+  const [rosIp, setRosIp] = useState<string>(''); // Initialize as an empty string
   const [robotConfig, setRobotConfig] = useState<RobotConfig>(
-    getDefaultRobotConfig(),
+    getDefaultRobotConfig()
   );
   const [availableConfigs, setAvailableConfigs] = useState<
     Record<string, RobotConfig>
@@ -46,7 +46,7 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
    * This helps prevent hydration mismatch issues.
    */
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       // Set rosIp to the hostname after the component has mounted
       setRosIp(window.location.hostname);
     }
@@ -72,7 +72,7 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
     } catch (error) {
-      console.error("Error loading robot configurations:", error);
+      console.error('Error loading robot configurations:', error);
       setConfigsLoaded(true); // Still mark as loaded even if failed
     }
   };
@@ -102,19 +102,19 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
       url: rosbridgeUrl,
     });
 
-    rosInstance.on("connection", () => {
-      console.log("Connected to ROS");
+    rosInstance.on('connection', () => {
+      console.log('Connected to ROS');
       setRos(rosInstance);
       setConnected(true);
     });
 
-    rosInstance.on("error", (err) => {
-      console.error("ROS connection error:", err);
+    rosInstance.on('error', (err) => {
+      console.error('ROS connection error:', err);
       setConnected(false);
     });
 
-    rosInstance.on("close", () => {
-      console.warn("ROS connection closed");
+    rosInstance.on('close', () => {
+      console.warn('ROS connection closed');
       setRos(null);
       setConnected(false);
     });
@@ -155,7 +155,7 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
       setRobotType,
       refreshConfigs,
     }),
-    [connected, ros, rosIp, robotConfig, availableConfigs, configsLoaded],
+    [connected, ros, rosIp, robotConfig, availableConfigs, configsLoaded]
   );
 
   return (

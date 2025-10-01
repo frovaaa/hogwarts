@@ -22,19 +22,19 @@ import {
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 
-import { useContext, useEffect, useState } from "react";
-import { RosContext } from "@/context/RosContext";
-import { JoystickControlPanel, CameraFeedPanel } from "@/components/panels";
+import { useContext, useEffect, useState } from 'react';
+import { RosContext } from '@/context/RosContext';
+import { JoystickControlPanel, CameraFeedPanel } from '@/components/panels';
 import ActionsPanel, {
   type SectionVisibility,
-} from "@/components/ActionsPanel";
-import RobotSelector from "@/components/RobotSelector";
+} from '@/components/ActionsPanel';
+import RobotSelector from '@/components/RobotSelector';
 
 export default function Homepage() {
   const rosContext = useContext(RosContext);
 
   if (!rosContext) {
-    throw new Error("TopicsListPage must be used within a RosProvider");
+    throw new Error('TopicsListPage must be used within a RosProvider');
   }
 
   const { connected, ros, rosIp, connectToRos, robotConfig } = rosContext;
@@ -65,7 +65,7 @@ export default function Homepage() {
   };
 
   const ipFromUrl =
-    typeof window !== "undefined" ? window.location.hostname : null;
+    typeof window !== 'undefined' ? window.location.hostname : null;
 
   useEffect(() => {
     if (!manualIp && ipFromUrl) {
@@ -77,14 +77,14 @@ export default function Homepage() {
   // Check for restored session on mount
   useEffect(() => {
     const checkRestoredSession = () => {
-      const savedSession = localStorage.getItem("experiment-control-session");
-      const savedExperimentSession = localStorage.getItem("experiment-session");
+      const savedSession = localStorage.getItem('experiment-control-session');
+      const savedExperimentSession = localStorage.getItem('experiment-session');
 
       if (savedSession || savedExperimentSession) {
         setSessionRestored(true);
         setActionResult({
           success: true,
-          message: "Session restored after page refresh",
+          message: 'Session restored after page refresh',
         });
 
         // Clear the restoration message after 3 seconds
@@ -121,31 +121,31 @@ export default function Homepage() {
     } else if (!sessionId) {
       setActionResult({
         success: true,
-        message: "Experiment session ended",
+        message: 'Experiment session ended',
       });
     }
   };
 
   return (
-    <Container style={{ textAlign: "center", padding: "20px" }}>
+    <Container style={{ textAlign: 'center', padding: '20px' }}>
       {!connected && (
         <Box mb={2}>
           <Alert
-            severity="error"
+            severity='error'
             style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
             }}
           >
             <Typography
-              variant="h6"
+              variant='h6'
               gutterBottom
-              style={{ textAlign: "center" }}
+              style={{ textAlign: 'center' }}
             >
               Connection Error
             </Typography>
-            <Typography variant="body2" style={{ textAlign: "center" }}>
+            <Typography variant='body2' style={{ textAlign: 'center' }}>
               Failed to connect to ROS2 WebSocket. Please enter the IP manually.
             </Typography>
           </Alert>
@@ -156,28 +156,28 @@ export default function Homepage() {
           <Alert
             severity={
               actionResult.success === null
-                ? "warning"
+                ? 'warning'
                 : actionResult.success
-                  ? "success"
-                  : "error"
+                  ? 'success'
+                  : 'error'
             }
           >
-            <Typography variant="body2">{actionResult.message}</Typography>
+            <Typography variant='body2'>{actionResult.message}</Typography>
           </Alert>
         </Box>
       )}
       {!connected && (
-        <Box display="flex" flexDirection="column" alignItems="center">
+        <Box display='flex' flexDirection='column' alignItems='center'>
           <TextField
-            label="ROS2 Bridge IP"
-            variant="outlined"
+            label='ROS2 Bridge IP'
+            variant='outlined'
             value={manualIp}
             onChange={(e) => setManualIp(e.target.value)}
-            style={{ marginTop: "20px", marginBottom: "10px" }}
+            style={{ marginTop: '20px', marginBottom: '10px' }}
           />
           <Button
-            variant="contained"
-            color="primary"
+            variant='contained'
+            color='primary'
             onClick={handleManualConnect}
           >
             Connect
@@ -191,8 +191,8 @@ export default function Homepage() {
               {/* Current Session Indicator */}
               {currentSessionId && (
                 <Box mb={2}>
-                  <Alert severity="info">
-                    <Typography variant="body2">
+                  <Alert severity='info'>
+                    <Typography variant='body2'>
                       <strong>Active Session:</strong> {currentSessionId}
                     </Typography>
                   </Alert>
@@ -201,14 +201,23 @@ export default function Homepage() {
 
               {robotConfig.capabilities.hasCamera && (
                 <Box>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                    <Typography variant="h6">Camera Feed</Typography>
+                  <Box
+                    display='flex'
+                    alignItems='center'
+                    justifyContent='space-between'
+                    mb={1}
+                  >
+                    <Typography variant='h6'>Camera Feed</Typography>
                     <IconButton
-                      size="small"
+                      size='small'
                       onClick={() => setCameraVisible(!cameraVisible)}
-                      title={cameraVisible ? "Hide Camera" : "Show Camera"}
+                      title={cameraVisible ? 'Hide Camera' : 'Show Camera'}
                     >
-                      {cameraVisible ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      {cameraVisible ? (
+                        <VisibilityOffIcon />
+                      ) : (
+                        <VisibilityIcon />
+                      )}
                     </IconButton>
                   </Box>
                   {cameraVisible && <CameraFeedPanel />}
@@ -223,18 +232,31 @@ export default function Homepage() {
                 sectionVisibility={sectionVisibility}
               />
               {robotConfig.capabilities.hasMovement && (
-                <Box display="flex" flexDirection="column" alignItems="center">
+                <Box display='flex' flexDirection='column' alignItems='center'>
                   <JoystickControlPanel moveSpeed={moveSpeed} />
-                  <Box display="flex" alignItems="center" gap={2} mt={2} width="200px">
-                    <Typography variant="caption" sx={{ minWidth: 'fit-content' }}>Speed:</Typography>
+                  <Box
+                    display='flex'
+                    alignItems='center'
+                    gap={2}
+                    mt={2}
+                    width='200px'
+                  >
+                    <Typography
+                      variant='caption'
+                      sx={{ minWidth: 'fit-content' }}
+                    >
+                      Speed:
+                    </Typography>
                     <Slider
                       min={0.1}
                       max={1}
                       step={0.05}
                       value={moveSpeed}
                       onChange={(_, v) => setMoveSpeed(Number(v))}
-                      valueLabelDisplay="auto"
-                      valueLabelFormat={(value) => `${(value * 100).toFixed(0)}%`}
+                      valueLabelDisplay='auto'
+                      valueLabelFormat={(value) =>
+                        `${(value * 100).toFixed(0)}%`
+                      }
                     />
                   </Box>
                 </Box>
@@ -244,8 +266,8 @@ export default function Homepage() {
 
           {/* Floating Action Button */}
           <Fab
-            color="primary"
-            aria-label="settings"
+            color='primary'
+            aria-label='settings'
             sx={{
               position: 'fixed',
               bottom: 16,
@@ -258,7 +280,7 @@ export default function Homepage() {
 
           {/* Configuration Drawer */}
           <Drawer
-            anchor="right"
+            anchor='right'
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
             sx={{
@@ -268,16 +290,16 @@ export default function Homepage() {
               },
             }}
           >
-            <AppBar position="static" elevation={0}>
+            <AppBar position='static' elevation={0}>
               <Toolbar>
-                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                <Typography variant='h6' sx={{ flexGrow: 1 }}>
                   Robot Configuration
                 </Typography>
                 <IconButton
-                  edge="end"
-                  color="inherit"
+                  edge='end'
+                  color='inherit'
                   onClick={() => setDrawerOpen(false)}
-                  aria-label="close"
+                  aria-label='close'
                 >
                   <CloseIcon />
                 </IconButton>

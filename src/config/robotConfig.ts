@@ -76,7 +76,7 @@ export async function loadAllRobotConfigs(): Promise<
 > {
   try {
     // First try to get the list from the server API
-    const response = await fetch("http://localhost:4000/robot/configs/list");
+    const response = await fetch('http://localhost:4000/robot/configs/list');
 
     if (response.ok) {
       const { configs } = await response.json();
@@ -95,14 +95,14 @@ export async function loadAllRobotConfigs(): Promise<
     }
   } catch (error) {
     console.warn(
-      "Could not load configs from server, falling back to hardcoded list:",
-      error,
+      'Could not load configs from server, falling back to hardcoded list:',
+      error
     );
   }
 
   // Fallback to hardcoded list if server is not available
   try {
-    const robotNames = ["robomaster", "tiago"];
+    const robotNames = ['robomaster', 'tiago'];
     const configs: Record<string, RobotConfig> = {};
 
     for (const robotName of robotNames) {
@@ -115,7 +115,7 @@ export async function loadAllRobotConfigs(): Promise<
     ROBOT_CONFIGS = configs;
     return configs;
   } catch (error) {
-    console.error("Error loading robot configurations:", error);
+    console.error('Error loading robot configurations:', error);
     return {};
   }
 }
@@ -133,10 +133,10 @@ export function getAllRobotConfigs(): Record<string, RobotConfig> {
 export async function saveRobotConfig(config: RobotConfig): Promise<boolean> {
   try {
     // Try to save to server first
-    const response = await fetch("http://localhost:4000/robot/configs/save", {
-      method: "POST",
+    const response = await fetch('http://localhost:4000/robot/configs/save', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(config),
     });
@@ -147,12 +147,12 @@ export async function saveRobotConfig(config: RobotConfig): Promise<boolean> {
       return true;
     } else {
       const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to save configuration");
+      throw new Error(errorData.error || 'Failed to save configuration');
     }
   } catch (error) {
     console.warn(
-      "Could not save to server, falling back to localStorage:",
-      error,
+      'Could not save to server, falling back to localStorage:',
+      error
     );
 
     // Fallback to localStorage
@@ -160,16 +160,16 @@ export async function saveRobotConfig(config: RobotConfig): Promise<boolean> {
       ROBOT_CONFIGS[config.name] = config;
 
       const savedConfigs = JSON.parse(
-        localStorage.getItem("customRobotConfigs") || "{}",
+        localStorage.getItem('customRobotConfigs') || '{}'
       );
       savedConfigs[config.name] = config;
-      localStorage.setItem("customRobotConfigs", JSON.stringify(savedConfigs));
+      localStorage.setItem('customRobotConfigs', JSON.stringify(savedConfigs));
 
       return true;
     } catch (localError) {
       console.error(
-        "Error saving robot configuration to localStorage:",
-        localError,
+        'Error saving robot configuration to localStorage:',
+        localError
       );
       return false;
     }
@@ -182,11 +182,11 @@ export async function saveRobotConfig(config: RobotConfig): Promise<boolean> {
 export function loadCustomRobotConfigs(): Record<string, RobotConfig> {
   try {
     const savedConfigs = JSON.parse(
-      localStorage.getItem("customRobotConfigs") || "{}",
+      localStorage.getItem('customRobotConfigs') || '{}'
     );
     return savedConfigs;
   } catch (error) {
-    console.error("Error loading custom robot configurations:", error);
+    console.error('Error loading custom robot configurations:', error);
     return {};
   }
 }
@@ -200,8 +200,8 @@ export async function deleteRobotConfig(robotName: string): Promise<boolean> {
     const response = await fetch(
       `http://localhost:4000/robot/configs/${robotName}`,
       {
-        method: "DELETE",
-      },
+        method: 'DELETE',
+      }
     );
 
     if (response.ok) {
@@ -210,12 +210,12 @@ export async function deleteRobotConfig(robotName: string): Promise<boolean> {
       return true;
     } else {
       const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to delete configuration");
+      throw new Error(errorData.error || 'Failed to delete configuration');
     }
   } catch (error) {
     console.warn(
-      "Could not delete from server, falling back to localStorage:",
-      error,
+      'Could not delete from server, falling back to localStorage:',
+      error
     );
 
     // Fallback to localStorage deletion
@@ -223,16 +223,16 @@ export async function deleteRobotConfig(robotName: string): Promise<boolean> {
       delete ROBOT_CONFIGS[robotName];
 
       const savedConfigs = JSON.parse(
-        localStorage.getItem("customRobotConfigs") || "{}",
+        localStorage.getItem('customRobotConfigs') || '{}'
       );
       delete savedConfigs[robotName];
-      localStorage.setItem("customRobotConfigs", JSON.stringify(savedConfigs));
+      localStorage.setItem('customRobotConfigs', JSON.stringify(savedConfigs));
 
       return true;
     } catch (localError) {
       console.error(
-        "Error deleting robot configuration from localStorage:",
-        localError,
+        'Error deleting robot configuration from localStorage:',
+        localError
       );
       return false;
     }
@@ -253,12 +253,12 @@ export const getDefaultRobotConfig = (): RobotConfig => {
 
   // Fallback configuration if no configs are available
   return {
-    name: "default",
-    displayName: "Default Robot",
-    description: "Default robot configuration",
+    name: 'default',
+    displayName: 'Default Robot',
+    description: 'Default robot configuration',
     topics: {
-      cmdVel: "/cmd_vel",
-      odom: "/odom",
+      cmdVel: '/cmd_vel',
+      odom: '/odom',
     },
     movementParams: {
       maxLinearSpeed: 1.0,
