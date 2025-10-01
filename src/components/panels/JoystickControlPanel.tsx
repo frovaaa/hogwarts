@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import ROSLIB from "roslib";
-import { useExperimentLogger } from "../hooks/useExperimentLogger";
-import { useRosContext } from "../hooks/useRosContext";
+import { useExperimentLogger } from "@/hooks/useExperimentLogger";
+import { useRosContext } from "@/hooks/useRosContext";
 
 interface JoystickControlProps {
   moveSpeed: number;

@@ -24,8 +24,7 @@ import {
 
 import { useContext, useEffect, useState } from "react";
 import { RosContext } from "@/context/RosContext";
-import JoystickControl from "@/components/JoystickControl";
-import CameraFeed from "@/components/CameraFeed";
+import { JoystickControlPanel, CameraFeedPanel } from "@/components/panels";
 import ActionsPanel, {
   type SectionVisibility,
 } from "@/components/ActionsPanel";
@@ -212,7 +211,7 @@ export default function Homepage() {
                       {cameraVisible ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </Box>
-                  {cameraVisible && <CameraFeed />}
+                  {cameraVisible && <CameraFeedPanel />}
                 </Box>
               )}
               <ActionsPanel
@@ -225,7 +224,7 @@ export default function Homepage() {
               />
               {robotConfig.capabilities.hasMovement && (
                 <Box display="flex" flexDirection="column" alignItems="center">
-                  <JoystickControl moveSpeed={moveSpeed} />
+                  <JoystickControlPanel moveSpeed={moveSpeed} />
                   <Box display="flex" alignItems="center" gap={2} mt={2} width="200px">
                     <Typography variant="caption" sx={{ minWidth: 'fit-content' }}>Speed:</Typography>
                     <Slider

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import ROSLIB from "roslib";
-import { useRosContext } from "../hooks/useRosContext";
+import { useRosContext } from "@/hooks/useRosContext";
 
 export default function CameraFeed() {
   const { ros, robotConfig } = useRosContext();
