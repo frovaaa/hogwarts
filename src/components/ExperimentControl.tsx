@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -18,7 +18,7 @@ import {
   List,
   ListItem,
   ListItemText,
-} from '@mui/material';
+} from "@mui/material";
 
 interface ExperimentControlProps {
   manualIp: string;
@@ -47,7 +47,7 @@ export default function ExperimentControl({
   exportLogsAsJsonl,
   saveAllLogsToServer,
 }: ExperimentControlProps) {
-  const [sessionName, setSessionName] = useState('');
+  const [sessionName, setSessionName] = useState("");
   const [currentSession, setCurrentSession] = useState<string | null>(null);
   const [bagStatus, setBagStatus] = useState<BagStatus>({
     recording: false,
@@ -64,9 +64,9 @@ export default function ExperimentControl({
   // Load session from localStorage on mount
   useEffect(() => {
     try {
-      const savedSession = localStorage.getItem('experiment-control-session');
+      const savedSession = localStorage.getItem("experiment-control-session");
       const savedStartTime = localStorage.getItem(
-        'experiment-control-start-time'
+        "experiment-control-start-time",
       );
 
       if (savedSession && savedStartTime) {
@@ -74,17 +74,17 @@ export default function ExperimentControl({
         setSessionStartTime(new Date(savedStartTime));
         onSessionChange?.(savedSession);
         console.log(
-          'Restored experiment control session from localStorage:',
-          savedSession
+          "Restored experiment control session from localStorage:",
+          savedSession,
         );
       }
     } catch (error) {
       console.warn(
-        'Failed to restore experiment control session from localStorage:',
-        error
+        "Failed to restore experiment control session from localStorage:",
+        error,
       );
-      localStorage.removeItem('experiment-control-session');
-      localStorage.removeItem('experiment-control-start-time');
+      localStorage.removeItem("experiment-control-session");
+      localStorage.removeItem("experiment-control-start-time");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run on mount to restore session
@@ -92,14 +92,14 @@ export default function ExperimentControl({
   // Save session to localStorage whenever it changes
   useEffect(() => {
     if (currentSession && sessionStartTime) {
-      localStorage.setItem('experiment-control-session', currentSession);
+      localStorage.setItem("experiment-control-session", currentSession);
       localStorage.setItem(
-        'experiment-control-start-time',
-        sessionStartTime.toISOString()
+        "experiment-control-start-time",
+        sessionStartTime.toISOString(),
       );
     } else {
-      localStorage.removeItem('experiment-control-session');
-      localStorage.removeItem('experiment-control-start-time');
+      localStorage.removeItem("experiment-control-session");
+      localStorage.removeItem("experiment-control-start-time");
     }
   }, [currentSession, sessionStartTime]);
 
@@ -115,7 +115,7 @@ export default function ExperimentControl({
           // If we have a session but bag is not recording, there might be a disconnect
           if (currentSession && !status.recording) {
             console.warn(
-              'Session exists but bag is not recording - possible disconnection or crash'
+              "Session exists but bag is not recording - possible disconnection or crash",
             );
           }
         }
@@ -132,7 +132,7 @@ export default function ExperimentControl({
 
   const startSession = async () => {
     if (!sessionName.trim()) {
-      setError('Please enter a session name');
+      setError("Please enter a session name");
       return;
     }
 
@@ -142,8 +142,8 @@ export default function ExperimentControl({
     try {
       // Start ROS2 bag recording
       const bagResponse = await fetch(`http://${manualIp}:4000/bag/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionName: sessionName.trim(),
         }),
@@ -151,7 +151,7 @@ export default function ExperimentControl({
 
       if (!bagResponse.ok) {
         const errorData = await bagResponse.json();
-        throw new Error(errorData.error || 'Failed to start bag recording');
+        throw new Error(errorData.error || "Failed to start bag recording");
       }
 
       const bagData = await bagResponse.json();
@@ -159,26 +159,26 @@ export default function ExperimentControl({
       // Set current session
       const sessionId = `${sessionName.trim()}_${new Date()
         .toISOString()
-        .replace(/[:.]/g, '-')}`;
+        .replace(/[:.]/g, "-")}`;
       const startTime = new Date();
       setCurrentSession(sessionId);
       setSessionStartTime(startTime);
       onSessionChange?.(sessionId);
 
       // Save to localStorage immediately
-      localStorage.setItem('experiment-control-session', sessionId);
+      localStorage.setItem("experiment-control-session", sessionId);
       localStorage.setItem(
-        'experiment-control-start-time',
-        startTime.toISOString()
+        "experiment-control-start-time",
+        startTime.toISOString(),
       );
 
       setSuccess(`Session started: ${sessionName}`);
-      console.log('Bag recording started:', bagData);
+      console.log("Bag recording started:", bagData);
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start session');
+      setError(err instanceof Error ? err.message : "Failed to start session");
     } finally {
       setLoading(false);
     }
@@ -197,23 +197,23 @@ export default function ExperimentControl({
             const saveResponse = await fetch(
               `http://${manualIp}:4000/experiment/logs/save`,
               {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   sessionId: currentSession,
                   logs: logsJsonl,
                 }),
-              }
+              },
             );
 
             if (!saveResponse.ok) {
-              console.warn('Failed to save experiment logs, but continuing...');
+              console.warn("Failed to save experiment logs, but continuing...");
             } else {
-              console.log('Experiment logs saved successfully via fallback');
+              console.log("Experiment logs saved successfully via fallback");
             }
           }
         } catch (logError) {
-          console.warn('Error saving experiment logs via fallback:', logError);
+          console.warn("Error saving experiment logs via fallback:", logError);
         }
       }
     };
@@ -225,19 +225,19 @@ export default function ExperimentControl({
           const saveSuccess = await saveAllLogsToServer();
           if (saveSuccess) {
             console.log(
-              'Experiment logs saved successfully using saveAllLogsToServer'
+              "Experiment logs saved successfully using saveAllLogsToServer",
             );
           } else {
             console.warn(
-              'Failed to save experiment logs using saveAllLogsToServer, trying fallback...'
+              "Failed to save experiment logs using saveAllLogsToServer, trying fallback...",
             );
             // Fallback to old method
             await fallbackSaveLogs();
           }
         } catch (logError) {
           console.warn(
-            'Error saving experiment logs with saveAllLogsToServer:',
-            logError
+            "Error saving experiment logs with saveAllLogsToServer:",
+            logError,
           );
           // Fallback to old method
           await fallbackSaveLogs();
@@ -248,12 +248,12 @@ export default function ExperimentControl({
 
       // Stop ROS2 bag recording
       const bagResponse = await fetch(`http://${manualIp}:4000/bag/stop`, {
-        method: 'POST',
+        method: "POST",
       });
 
       if (!bagResponse.ok) {
         const errorData = await bagResponse.json();
-        throw new Error(errorData.error || 'Failed to stop bag recording');
+        throw new Error(errorData.error || "Failed to stop bag recording");
       }
 
       const bagData = await bagResponse.json();
@@ -264,16 +264,16 @@ export default function ExperimentControl({
       onSessionChange?.(null);
 
       // Clean up localStorage
-      localStorage.removeItem('experiment-control-session');
-      localStorage.removeItem('experiment-control-start-time');
+      localStorage.removeItem("experiment-control-session");
+      localStorage.removeItem("experiment-control-start-time");
 
-      setSuccess('Session stopped and data saved');
-      console.log('Bag recording stopped:', bagData);
+      setSuccess("Session stopped and data saved");
+      console.log("Bag recording stopped:", bagData);
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to stop session');
+      setError(err instanceof Error ? err.message : "Failed to stop session");
     } finally {
       setLoading(false);
     }
@@ -282,27 +282,27 @@ export default function ExperimentControl({
   const loadLogFiles = async () => {
     try {
       const response = await fetch(
-        `http://${manualIp}:4000/experiment/logs/list`
+        `http://${manualIp}:4000/experiment/logs/list`,
       );
       if (response.ok) {
         const data = await response.json();
         setLogFiles(data.files || []);
       }
     } catch (err) {
-      console.error('Failed to load log files:', err);
+      console.error("Failed to load log files:", err);
     }
   };
 
   const downloadLogFile = async (sessionId: string) => {
     try {
       const response = await fetch(
-        `http://${manualIp}:4000/experiment/logs/download/${sessionId}`
+        `http://${manualIp}:4000/experiment/logs/download/${sessionId}`,
       );
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
+        const a = document.createElement("a");
+        a.style.display = "none";
         a.href = url;
         a.download = `experiment_${sessionId}.jsonl`;
         document.body.appendChild(a);
@@ -311,7 +311,7 @@ export default function ExperimentControl({
         document.body.removeChild(a);
       }
     } catch (err) {
-      console.error('Failed to download log file:', err);
+      console.error("Failed to download log file:", err);
     }
   };
 
@@ -325,13 +325,13 @@ export default function ExperimentControl({
     const diff = now.getTime() - startTime.getTime();
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / 1048576).toFixed(1) + ' MB';
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
   };
 
   return (
@@ -376,12 +376,12 @@ export default function ExperimentControl({
               {sessionStartTime && formatDuration(sessionStartTime)}
             </Typography>
             <Typography variant="caption" display="block" sx={{ mb: 1 }}>
-              <strong>ID:</strong>{' '}
-              {currentSession.split('_').slice(0, -1).join('_')}
+              <strong>ID:</strong>{" "}
+              {currentSession.split("_").slice(0, -1).join("_")}
             </Typography>
             <Chip
-              label={bagStatus.recording ? '🔴 Recording' : '⚫ Stopped'}
-              color={bagStatus.recording ? 'success' : 'default'}
+              label={bagStatus.recording ? "🔴 Recording" : "⚫ Stopped"}
+              color={bagStatus.recording ? "success" : "default"}
               size="small"
             />
           </Box>

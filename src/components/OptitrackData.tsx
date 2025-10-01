@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Typography, Box } from '@mui/material';
-import ROSLIB from 'roslib';
-import { useRosContext } from '../hooks/useRosContext';
+import { useEffect, useState } from "react";
+import { Typography, Box } from "@mui/material";
+import ROSLIB from "roslib";
+import { useRosContext } from "../hooks/useRosContext";
 
 export default function ExternalPoseData() {
   const { ros, robotConfig } = useRosContext();
@@ -12,7 +12,7 @@ export default function ExternalPoseData() {
       const poseListener = new ROSLIB.Topic({
         ros,
         name: robotConfig.topics.externalPose,
-        messageType: 'geometry_msgs/PoseStamped',
+        messageType: "geometry_msgs/PoseStamped",
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,14 +51,14 @@ export default function ExternalPoseData() {
         variant="body2"
         component="pre"
         style={{
-          backgroundColor: '#f4f4f4',
-          padding: '10px',
-          borderRadius: '5px',
-          overflowX: 'auto',
-          width: '15rem',
+          backgroundColor: "#f4f4f4",
+          padding: "10px",
+          borderRadius: "5px",
+          overflowX: "auto",
+          width: "15rem",
         }}
       >
-        {pose || 'Waiting for external pose data...'}
+        {pose || "Waiting for external pose data..."}
       </Typography>
     </Box>
   );

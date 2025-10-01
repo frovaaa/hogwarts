@@ -1,0 +1,35 @@
+{
+  "name": "robomaster",
+  "displayName": "RoboMaster S1",
+  "description": "DJI RoboMaster S1 educational robot",
+  "topics": {
+    "cmdVel": "/robomaster/cmd_vel",
+    "odom": "/robomaster/odom",
+    "rgbCamera": "/robomaster/camera/image_color",
+    "moveRobotAction": "/robomaster/move_robot_world_ref",
+    "moveArmAction": "/robomaster/move_arm_pose",
+    "gripperAction": "/robomaster/gripper",
+    "leds": "/robomaster/leds/color",
+    "sound": "/robomaster/cmd_sound",
+    "panic": "/robomaster/panic",
+    "externalPose": "/optitrack/robomaster_frova"
+  },
+  "movementParams": {
+    "maxLinearSpeed": 3.5,
+    "maxAngularSpeed": 6.0,
+    "rotationSpeed": 2.5,
+    "backwardDistance": -0.2,
+    "backwardDuration": 300,
+    "wigglePhase1": 0.25,
+    "wigglePhase2": 0.5,
+    "wigglePhase3": 0.25,
+    "wiggleRateHz": 30
+  },
+  "capabilities": {
+    "hasCamera": true,
+    "hasMovement": true,
+    "hasArm": true,
+    "hasLeds": true,
+    "hasSound": true
+  }
+}

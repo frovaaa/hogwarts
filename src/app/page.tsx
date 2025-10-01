@@ -1,7 +1,5 @@
 'use client';
 
-import { useContext, useEffect, useState } from 'react';
-import { RosContext } from '@/context/RosContext';
 import {
   Container,
   Typography,
@@ -9,27 +7,35 @@ import {
   TextField,
   Button,
   Box,
-  Grid2 as Grid,
+  Grid,
+  Drawer,
+  IconButton,
+  AppBar,
+  Toolbar,
+  Fab,
 } from '@mui/material';
-import JoystickControl from '@/components/JoystickControl';
-import CameraFeed from '@/components/CameraFeed';
-import TopicsList from '@/components/TopicsList';
-import ActionsPanel, { type SectionVisibility } from '@/components/ActionsPanel';
-import OdomData from '@/components/OdomData';
-import ExternalPoseData from '@/components/OptitrackData';
-import RobotSelector from '@/components/RobotSelector';
-import RobotConfigStatus from '@/components/RobotConfigStatus';
+import {
+  Settings as SettingsIcon,
+  Close as CloseIcon,
+} from '@mui/icons-material';
+
+import { useContext, useEffect, useState } from "react";
+import { RosContext } from "@/context/RosContext";
+import JoystickControl from "@/components/JoystickControl";
+import CameraFeed from "@/components/CameraFeed";
+import ActionsPanel, {
+  type SectionVisibility,
+} from "@/components/ActionsPanel";
+import RobotSelector from "@/components/RobotSelector";
 
 export default function Homepage() {
   const rosContext = useContext(RosContext);
 
   if (!rosContext) {
-    throw new Error('TopicsListPage must be used within a RosProvider');
+    throw new Error("TopicsListPage must be used within a RosProvider");
   }
 
-  const { connected, ros, rosIp, connectToRos } = rosContext;
-  // const [topics, setTopics] = useState<string[]>([]);
-  // const [error, setError] = useState<string | null>(null);
+  const { connected, ros, rosIp, connectToRos, robotConfig } = rosContext;
   const [manualIp, setManualIp] = useState<string>(rosIp);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [actionResult, setActionResult] = useState<{
@@ -39,6 +45,7 @@ export default function Homepage() {
   // --- MoveSpeed state lifted up ---
   const [moveSpeed, setMoveSpeed] = useState(0.5);
   const [sessionRestored, setSessionRestored] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Configure which sections of ActionsPanel to show
   const sectionVisibility: SectionVisibility = {
@@ -54,38 +61,8 @@ export default function Homepage() {
     showSound: true, // Show sound controls
   };
 
-  // Example configurations for different scenarios:
-  // 
-  // For minimal interface (only essential controls):
-  // const minimalConfig: SectionVisibility = {
-  //   showExperimentControl: true,
-  //   showFeedback: true,
-  //   showPanic: true,
-  // };
-  //
-  // For full debugging interface:
-  // const debugConfig: SectionVisibility = {
-  //   showRobotPosition: true,
-  //   showExperimentControl: true,
-  //   showLeds: true,
-  //   showGripper: true,
-  //   showArm: true,
-  //   showFeedback: true,
-  //   showMacroScenarios: true,
-  //   showMovement: true,
-  //   showPanic: true,
-  //   showSound: true,
-  // };
-  //
-  // For experiment-only interface:
-  // const experimentConfig: SectionVisibility = {
-  //   showExperimentControl: true,
-  //   showFeedback: true,
-  //   showMacroScenarios: true,
-  // };
-
   const ipFromUrl =
-    typeof window !== 'undefined' ? window.location.hostname : null;
+    typeof window !== "undefined" ? window.location.hostname : null;
 
   useEffect(() => {
     if (!manualIp && ipFromUrl) {
@@ -97,14 +74,14 @@ export default function Homepage() {
   // Check for restored session on mount
   useEffect(() => {
     const checkRestoredSession = () => {
-      const savedSession = localStorage.getItem('experiment-control-session');
-      const savedExperimentSession = localStorage.getItem('experiment-session');
+      const savedSession = localStorage.getItem("experiment-control-session");
+      const savedExperimentSession = localStorage.getItem("experiment-session");
 
       if (savedSession || savedExperimentSession) {
         setSessionRestored(true);
         setActionResult({
           success: true,
-          message: 'Session restored after page refresh',
+          message: "Session restored after page refresh",
         });
 
         // Clear the restoration message after 3 seconds
@@ -141,52 +118,45 @@ export default function Homepage() {
     } else if (!sessionId) {
       setActionResult({
         success: true,
-        message: 'Experiment session ended',
+        message: "Experiment session ended",
       });
     }
   };
 
   return (
-    <Container style={{ textAlign: 'center', padding: '20px' }}>
+    <Container style={{ textAlign: "center", padding: "20px" }}>
       {!connected && (
         <Box mb={2}>
           <Alert
             severity="error"
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
           >
             <Typography
               variant="h6"
               gutterBottom
-              style={{ textAlign: 'center' }}
+              style={{ textAlign: "center" }}
             >
               Connection Error
             </Typography>
-            <Typography variant="body2" style={{ textAlign: 'center' }}>
+            <Typography variant="body2" style={{ textAlign: "center" }}>
               Failed to connect to ROS2 WebSocket. Please enter the IP manually.
             </Typography>
           </Alert>
         </Box>
       )}
-      {/* {error && (
-        <Box mb={2}>
-          <Alert severity="warning">
-            <Typography variant="body2">{error}</Typography>
-          </Alert>
-        </Box>
-      )} */}
       {actionResult && (
         <Box mt={2}>
           <Alert
             severity={
               actionResult.success === null
-                ? 'warning'
+                ? "warning"
                 : actionResult.success
-                  ? 'success'
-                  : 'error'
+                  ? "success"
+                  : "error"
             }
           >
             <Typography variant="body2">{actionResult.message}</Typography>
@@ -200,7 +170,7 @@ export default function Homepage() {
             variant="outlined"
             value={manualIp}
             onChange={(e) => setManualIp(e.target.value)}
-            style={{ marginTop: '20px', marginBottom: '10px' }}
+            style={{ marginTop: "20px", marginBottom: "10px" }}
           />
           <Button
             variant="contained"
@@ -212,47 +182,85 @@ export default function Homepage() {
         </Box>
       )}
       {connected && (
-        <Grid container spacing={2}>
-          <Grid size={12}>
-            <RobotSelector />
-            <RobotConfigStatus />
-          </Grid>
-          {/* <Grid size={4}>
-            <Typography variant="h4" gutterBottom>
-              Robot Data
-            </Typography>
-            <TopicsList topics={[]} />
-            <OdomData />
-            <ExternalPoseData />
-          </Grid> */}
-          <Grid size={8}>
-            {/* Current Session Indicator */}
-            {currentSessionId && (
-              <Box mb={2}>
-                <Alert severity="info">
-                  <Typography variant="body2">
-                    <strong>Active Session:</strong> {currentSessionId}
-                  </Typography>
-                </Alert>
-              </Box>
-            )}
+        <>
+          <Grid container spacing={2}>
+            <Grid size={8}>
+              {/* Current Session Indicator */}
+              {currentSessionId && (
+                <Box mb={2}>
+                  <Alert severity="info">
+                    <Typography variant="body2">
+                      <strong>Active Session:</strong> {currentSessionId}
+                    </Typography>
+                  </Alert>
+                </Box>
+              )}
 
-            <CameraFeed />
-            <ActionsPanel
-              ros={ros}
-              manualIp={manualIp}
-              sessionId={currentSessionId}
-              onActionResult={handleActionResult}
-              onSessionChange={handleSessionChange}
-              moveSpeed={moveSpeed}
-              setMoveSpeed={setMoveSpeed}
-              sectionVisibility={sectionVisibility}
-            />
-            <Box display="flex" justifyContent="center" mt={0}>
-              <JoystickControl moveSpeed={moveSpeed} />
-            </Box>
+              {robotConfig.capabilities.hasCamera && <CameraFeed />}
+              <ActionsPanel
+                ros={ros}
+                manualIp={manualIp}
+                sessionId={currentSessionId}
+                onActionResult={handleActionResult}
+                onSessionChange={handleSessionChange}
+                moveSpeed={moveSpeed}
+                setMoveSpeed={setMoveSpeed}
+                sectionVisibility={sectionVisibility}
+              />
+              {robotConfig.capabilities.hasMovement && (
+                <Box display="flex" justifyContent="center" mt={0}>
+                  <JoystickControl moveSpeed={moveSpeed} />
+                </Box>
+              )}
+            </Grid>
           </Grid>
-        </Grid>
+
+          {/* Floating Action Button */}
+          <Fab
+            color="primary"
+            aria-label="settings"
+            sx={{
+              position: 'fixed',
+              bottom: 16,
+              right: 16,
+            }}
+            onClick={() => setDrawerOpen(true)}
+          >
+            <SettingsIcon />
+          </Fab>
+
+          {/* Configuration Drawer */}
+          <Drawer
+            anchor="right"
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            sx={{
+              '& .MuiDrawer-paper': {
+                width: 400,
+                maxWidth: '90vw',
+              },
+            }}
+          >
+            <AppBar position="static" elevation={0}>
+              <Toolbar>
+                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                  Robot Configuration
+                </Typography>
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setDrawerOpen(false)}
+                  aria-label="close"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Toolbar>
+            </AppBar>
+            <Box sx={{ p: 2 }}>
+              <RobotSelector />
+            </Box>
+          </Drawer>
+        </>
       )}
     </Container>
   );

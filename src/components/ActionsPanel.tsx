@@ -7,12 +7,12 @@ import {
   Stack,
   Card,
   CardContent,
-} from '@mui/material';
-import ROSLIB from 'roslib';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useExperimentLogger } from '../hooks/useExperimentLogger';
-import { useRosContext } from '../hooks/useRosContext';
-import ExperimentControl from './ExperimentControl';
+} from "@mui/material";
+import ROSLIB from "roslib";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useExperimentLogger } from "../hooks/useExperimentLogger";
+import { useRosContext } from "../hooks/useRosContext";
+import ExperimentControl from "./ExperimentControl";
 
 export interface SectionVisibility {
   showRobotPosition?: boolean;
@@ -55,11 +55,11 @@ enum GripperState {
 
 // Enum for macro scenarios
 export enum MacroScenario {
-  SHARE_LEGO = 'share_lego',
-  PASS_PIECE_KID1 = 'pass_piece_kid1',
-  PASS_PIECE_KID2 = 'pass_piece_kid2',
-  ENCOURAGE_COLLAB = 'encourage_collab',
-  PLAY_HAPPY_CHIME = 'play_happy_chime',
+  SHARE_LEGO = "share_lego",
+  PASS_PIECE_KID1 = "pass_piece_kid1",
+  PASS_PIECE_KID2 = "pass_piece_kid2",
+  ENCOURAGE_COLLAB = "encourage_collab",
+  PLAY_HAPPY_CHIME = "play_happy_chime",
 }
 
 // Position interface and named positions
@@ -95,9 +95,9 @@ interface IntegratedPosition {
 }
 
 export const Positions: Record<string, Position> = {
-  KID1: { x: 0.5, y: 0.5, theta: 0.0, label: 'kid1' },
-  KID2: { x: 0.5, y: -0.5, theta: 0.0, label: 'kid2' },
-  ORIGIN: { x: 0.0, y: 0.0, theta: 0.0, label: 'origin' },
+  KID1: { x: 0.5, y: 0.5, theta: 0.0, label: "kid1" },
+  KID2: { x: 0.5, y: -0.5, theta: 0.0, label: "kid2" },
+  ORIGIN: { x: 0.0, y: 0.0, theta: 0.0, label: "origin" },
 };
 
 export default function ActionsPanel({
@@ -176,24 +176,24 @@ export default function ActionsPanel({
       // Pass the session change up to the parent component
       onSessionChange?.(sessionId);
     },
-    [clearLogs, onSessionChange]
+    [clearLogs, onSessionChange],
   );
 
   // TF listener effect
   useEffect(() => {
     if (!ros) {
-      console.log('ROS connection is null/undefined');
+      console.log("ROS connection is null/undefined");
       setTfConnected(false);
       return;
     }
 
-    console.log('Setting up TF subscription, ROS connected:', ros.isConnected);
+    console.log("Setting up TF subscription, ROS connected:", ros.isConnected);
 
     // Subscribe directly to /tf topic instead of using TFClient
     const tfTopic = new ROSLIB.Topic({
       ros: ros,
-      name: '/tf',
-      messageType: 'tf2_msgs/TFMessage',
+      name: "/tf",
+      messageType: "tf2_msgs/TFMessage",
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -204,8 +204,8 @@ export default function ActionsPanel({
         const baseLinkTransform = message.transforms.find(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (transform: any) =>
-            transform.child_frame_id === 'robomaster/base_link' &&
-            transform.header.frame_id === 'robomaster/odom'
+            transform.child_frame_id === "robomaster/base_link" &&
+            transform.header.frame_id === "robomaster/odom",
         );
 
         if (baseLinkTransform) {
@@ -235,7 +235,7 @@ export default function ActionsPanel({
     return () => {
       if (tfTopic) {
         tfTopic.unsubscribe();
-        console.log('TF subscription cleaned up');
+        console.log("TF subscription cleaned up");
       }
       // Reset connection state when cleaning up
       setTfConnected(false);
@@ -250,13 +250,13 @@ export default function ActionsPanel({
       return;
     }
 
-    console.log('Setting up cmd_vel subscription for position integration');
+    console.log("Setting up cmd_vel subscription for position integration");
 
     // Subscribe to cmd_vel to track intended movements
     const cmdVelTopic = new ROSLIB.Topic({
       ros: ros,
       name: robotConfig.topics.cmdVel,
-      messageType: 'geometry_msgs/msg/Twist',
+      messageType: "geometry_msgs/msg/Twist",
     });
 
     let lastCmdTime = Date.now();
@@ -299,7 +299,7 @@ export default function ActionsPanel({
     return () => {
       if (cmdVelTopic) {
         cmdVelTopic.unsubscribe();
-        console.log('cmd_vel subscription cleaned up');
+        console.log("cmd_vel subscription cleaned up");
       }
     };
   }, [ros]);
@@ -317,7 +317,7 @@ export default function ActionsPanel({
         // If robot moved significantly via navigation (not manual cmd_vel), reset integrated position
         if (distance > 0.1) {
           console.log(
-            'Large odometry change detected, resetting integrated position'
+            "Large odometry change detected, resetting integrated position",
           );
           integratedPositionRef.current = {
             x: currentOdom.x,
@@ -365,7 +365,7 @@ export default function ActionsPanel({
     r: number,
     g: number,
     b: number,
-    intensity: number = 1.0
+    intensity: number = 1.0,
   ) => {
     if (ros) {
       // Scale RGB by intensity, alpha always 1.0
@@ -379,21 +379,21 @@ export default function ActionsPanel({
         a: 1.0,
       });
       if (!robotConfig.capabilities.hasLeds || !robotConfig.topics.leds) {
-        console.warn('Robot does not support LEDs');
+        console.warn("Robot does not support LEDs");
         return;
       }
       const ledColorPublisher = new ROSLIB.Topic({
         ros,
         name: robotConfig.topics.leds,
-        messageType: 'std_msgs/ColorRGBA',
+        messageType: "std_msgs/ColorRGBA",
       });
       ledColorPublisher.publish(msg);
       console.log(
-        `Publishing LED color: r=${scaledR}, g=${scaledG}, b=${scaledB}, a=1.0`
+        `Publishing LED color: r=${scaledR}, g=${scaledG}, b=${scaledB}, a=1.0`,
       );
 
       // Log the event
-      logLedEvent('set_color', {
+      logLedEvent("set_color", {
         r: scaledR,
         g: scaledG,
         b: scaledB,
@@ -402,32 +402,32 @@ export default function ActionsPanel({
       });
     } else {
       console.error(
-        'ROS connection is not available. Cannot publish LED color.'
+        "ROS connection is not available. Cannot publish LED color.",
       );
     }
   };
 
   // Helper function to get color name for logging
   const getColorName = (r: number, g: number, b: number): string => {
-    if (r === 1 && g === 0 && b === 0) return 'red';
-    if (r === 0 && g === 1 && b === 0) return 'green';
-    if (r === 0 && g === 0 && b === 1) return 'blue';
-    if (r === 1 && g === 0.2 && b === 0) return 'orange';
-    if (r === 0.21 && g === 0.27 && b === 0.31) return 'gray';
-    if (r === 1 && g === 1 && b === 1) return 'white';
-    if (r === 1 && g === 1 && b === 0) return 'yellow';
-    if (r === 0 && g === 0 && b === 0) return 'off';
+    if (r === 1 && g === 0 && b === 0) return "red";
+    if (r === 0 && g === 1 && b === 0) return "green";
+    if (r === 0 && g === 0 && b === 1) return "blue";
+    if (r === 1 && g === 0.2 && b === 0) return "orange";
+    if (r === 0.21 && g === 0.27 && b === 0.31) return "gray";
+    if (r === 1 && g === 1 && b === 1) return "white";
+    if (r === 1 && g === 1 && b === 0) return "yellow";
+    if (r === 0 && g === 0 && b === 0) return "off";
     return `custom_rgb(${r},${g},${b})`;
   };
 
   const callGenericAction = async (
     actionName: string,
     actionType: string,
-    goal: Record<string, unknown>
+    goal: Record<string, unknown>,
   ) => {
     console.log(
       `Calling generic action: ${actionName}, Type: ${actionType}, Goal:`,
-      goal
+      goal,
     );
     setIsActionInProgress(true); // Disable buttons
     // onActionResult?.({ success: null, message: `Executing ${actionName}...` }); // Notify intermediate state
@@ -435,7 +435,7 @@ export default function ActionsPanel({
     // Log the generic action before execution
     const actionCategory = getActionCategory(actionName);
     const eventLogger = getEventLogger(actionCategory);
-    eventLogger('generic_action', {
+    eventLogger("generic_action", {
       action_name: actionName,
       action_type: actionType,
       goal: goal,
@@ -443,9 +443,9 @@ export default function ActionsPanel({
 
     try {
       const response = await fetch(`http://${manualIp}:4000/generic-action`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           actionName,
@@ -458,7 +458,7 @@ export default function ActionsPanel({
         const errorText = await response.text();
         console.error(
           `Error calling action ${actionName} (${actionType}). Status: ${response.status}`,
-          errorText
+          errorText,
         );
         onActionResult?.({
           success: false,
@@ -466,7 +466,7 @@ export default function ActionsPanel({
         }); // Notify failure
 
         // Log the failure
-        eventLogger('generic_action_failed', {
+        eventLogger("generic_action_failed", {
           action_name: actionName,
           action_type: actionType,
           goal: goal,
@@ -487,7 +487,7 @@ export default function ActionsPanel({
       }); // Notify success or failure based on result.success
 
       // Log the success/failure result
-      eventLogger('generic_action_completed', {
+      eventLogger("generic_action_completed", {
         action_name: actionName,
         action_type: actionType,
         goal: goal,
@@ -497,7 +497,7 @@ export default function ActionsPanel({
     } catch (err) {
       console.error(
         `API call error for action ${actionName} (${actionType}):`,
-        err
+        err,
       );
       onActionResult?.({
         success: false,
@@ -505,7 +505,7 @@ export default function ActionsPanel({
       }); // Notify failure
 
       // Log the error
-      eventLogger('generic_action_error', {
+      eventLogger("generic_action_error", {
         action_name: actionName,
         action_type: actionType,
         goal: goal,
@@ -518,27 +518,27 @@ export default function ActionsPanel({
 
   // Helper to determine action category for logging
   const getActionCategory = (actionName: string): string => {
-    if (actionName.includes('sound')) return 'sound';
-    if (actionName.includes('led')) return 'led';
-    if (actionName.includes('gripper')) return 'gripper';
-    if (actionName.includes('arm')) return 'arm';
-    if (actionName.includes('move_robot') || actionName.includes('move'))
-      return 'movement';
-    return 'system';
+    if (actionName.includes("sound")) return "sound";
+    if (actionName.includes("led")) return "led";
+    if (actionName.includes("gripper")) return "gripper";
+    if (actionName.includes("arm")) return "arm";
+    if (actionName.includes("move_robot") || actionName.includes("move"))
+      return "movement";
+    return "system";
   };
 
   // Helper to get the right event logger based on category
   const getEventLogger = (category: string) => {
     switch (category) {
-      case 'movement':
+      case "movement":
         return logMovementEvent;
-      case 'arm':
+      case "arm":
         return logArmEvent;
-      case 'gripper':
+      case "gripper":
         return logGripperEvent;
-      case 'led':
+      case "led":
         return logLedEvent;
-      case 'sound':
+      case "sound":
         return logSoundEvent;
       default:
         return logSystemEvent;
@@ -548,18 +548,18 @@ export default function ActionsPanel({
   // Helper to move to any position
   const moveToPosition = async (pos: Position) => {
     if (!robotConfig.topics.moveRobotAction) {
-      console.warn('Robot does not support move robot action');
+      console.warn("Robot does not support move robot action");
       return;
     }
     const actionName = robotConfig.topics.moveRobotAction;
-    const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
+    const actionType = "robomaster_hri_msgs/action/MoveRobotWorldRef";
     const goal = {
       x: pos.x,
       y: pos.y,
       theta: pos.theta,
       linear_speed: 1.5 * moveSpeed,
       angular_speed: 1.2,
-      robot_world_ref_frame_name: 'world',
+      robot_world_ref_frame_name: "world",
     };
     console.log(`Initiating move to ${pos.label}...`);
     onActionResult?.({ success: null, message: `Moving to ${pos.label}...` });
@@ -567,12 +567,12 @@ export default function ActionsPanel({
   };
 
   const ledFeedback = async (
-    behavior: 'good' | 'bad',
+    behavior: "good" | "bad",
     times: number = 5, // Default to 5 times if not specified
-    speed: number = 100 // Default to 100ms interval if not specified
+    speed: number = 100, // Default to 100ms interval if not specified
   ) => {
     // Log the LED feedback event
-    logLedEvent('feedback_blink', {
+    logLedEvent("feedback_blink", {
       behavior: behavior,
       times: times,
       speed: speed,
@@ -584,7 +584,7 @@ export default function ActionsPanel({
       g: number,
       b: number,
       times: number,
-      speed: number
+      speed: number,
     ) => {
       let count = 0;
       const interval = setInterval(() => {
@@ -601,14 +601,14 @@ export default function ActionsPanel({
       }, speed); // Parametric interval
     };
 
-    if (behavior === 'good') {
+    if (behavior === "good") {
       console.log(
-        `Marking good behavior with ${times} blinks at ${speed}ms speed...`
+        `Marking good behavior with ${times} blinks at ${speed}ms speed...`,
       );
       blinkLed(0.0, 1.0, 0.0, times, speed); // Green LED blinks specified times
-    } else if (behavior === 'bad') {
+    } else if (behavior === "bad") {
       console.log(
-        `Marking bad behavior with ${times} blinks at ${speed}ms speed...`
+        `Marking bad behavior with ${times} blinks at ${speed}ms speed...`,
       );
       blinkLed(1.0, 0.0, 0.0, times, speed); // Red LED blinks specified times
     }
@@ -616,17 +616,17 @@ export default function ActionsPanel({
 
   const rotateOnSpot = (cycles: number, angularSpeed: number) => {
     if (!ros) {
-      console.error('ROS not available');
+      console.error("ROS not available");
       return;
     }
 
     setIsActionInProgress(true);
-    logMovementEvent('rotate_on_spot', { cycles, angular_speed: angularSpeed });
+    logMovementEvent("rotate_on_spot", { cycles, angular_speed: angularSpeed });
 
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
       name: robotConfig.topics.cmdVel,
-      messageType: 'geometry_msgs/msg/Twist',
+      messageType: "geometry_msgs/msg/Twist",
     });
 
     // ---- timing from movementParams (fallbacks keep it generic) ----
@@ -634,7 +634,7 @@ export default function ActionsPanel({
     const dtMs = Math.max(10, Math.round(1000 / rateHz));
 
     const phase1Sec = robotConfig.movementParams.wigglePhase1 ?? 0.25; // +
-    const phase2Sec = robotConfig.movementParams.wigglePhase2 ?? 0.50; // -
+    const phase2Sec = robotConfig.movementParams.wigglePhase2 ?? 0.5; // -
     const phase3Sec = robotConfig.movementParams.wigglePhase3 ?? 0.25; // +
 
     // Convert to ticks (ensure >=1)
@@ -652,8 +652,8 @@ export default function ActionsPanel({
     const M = Math.min(req, maxW / Math.max(1, alpha)); // keep within limits
 
     // constant per-phase velocities (no ramps)
-    const wzP = +M;           // left
-    const wzN = -alpha * M;   // right (bigger magnitude), ensures return to center
+    const wzP = +M; // left
+    const wzN = -alpha * M; // right (bigger magnitude), ensures return to center
 
     let tick = 0;
     const h = setInterval(() => {
@@ -661,26 +661,30 @@ export default function ActionsPanel({
 
       let wz = 0;
       if (t < n1) {
-        wz = wzP;                 // phase 1: left
+        wz = wzP; // phase 1: left
       } else if (t < n1 + n2) {
-        wz = wzN;                 // phase 2: right (bigger)
+        wz = wzN; // phase 2: right (bigger)
       } else {
-        wz = wzP;                 // phase 3: short left back to center
+        wz = wzP; // phase 3: short left back to center
       }
 
-      cmdVelTopic.publish(new ROSLIB.Message({
-        linear: { x: 0, y: 0, z: 0 },
-        angular: { x: 0, y: 0, z: wz },
-      }));
+      cmdVelTopic.publish(
+        new ROSLIB.Message({
+          linear: { x: 0, y: 0, z: 0 },
+          angular: { x: 0, y: 0, z: wz },
+        }),
+      );
 
       tick++;
       if (tick >= totalTicks) {
         clearInterval(h);
         // stop cleanly at the very end
-        cmdVelTopic.publish(new ROSLIB.Message({
-          linear: { x: 0, y: 0, z: 0 },
-          angular: { x: 0, y: 0, z: 0 },
-        }));
+        cmdVelTopic.publish(
+          new ROSLIB.Message({
+            linear: { x: 0, y: 0, z: 0 },
+            angular: { x: 0, y: 0, z: 0 },
+          }),
+        );
         setIsActionInProgress(false);
       }
     }, dtMs);
@@ -689,38 +693,38 @@ export default function ActionsPanel({
   // --- Sound Section ---
   const playCustomSound = (sound_id: number = 262) => {
     if (!ros) {
-      console.error('ROS connection is not available. Cannot play sound.');
+      console.error("ROS connection is not available. Cannot play sound.");
       return;
     }
 
     // Log the sound event
-    logSoundEvent('play_sound', {
+    logSoundEvent("play_sound", {
       sound_id: sound_id,
       sound_name: getSoundName(sound_id),
     });
 
     if (!robotConfig.capabilities.hasSound || !robotConfig.topics.sound) {
-      console.warn('Robot does not support sound');
+      console.warn("Robot does not support sound");
       return;
     }
     const soundTopic = new ROSLIB.Topic({
       ros,
       name: robotConfig.topics.sound,
-      messageType: 'robomaster_msgs/msg/SpeakerCommand',
+      messageType: "robomaster_msgs/msg/SpeakerCommand",
     });
     soundTopic.publish(
       new ROSLIB.Message({
         control: 1,
         sound_id,
         times: 1,
-      })
+      }),
     );
     setTimeout(() => {
       soundTopic.publish(
         new ROSLIB.Message({
           control: 0,
           sound_id,
-        })
+        }),
       );
     }, 500);
   };
@@ -729,13 +733,13 @@ export default function ActionsPanel({
   const getSoundName = (soundId: number): string => {
     switch (soundId) {
       case 262:
-        return 'beep';
+        return "beep";
       case 263:
-        return 'chime';
+        return "chime";
       case 264:
-        return 'melody';
+        return "melody";
       case 265:
-        return 'note';
+        return "note";
       default:
         return `custom_sound_${soundId}`;
     }
@@ -743,11 +747,11 @@ export default function ActionsPanel({
 
   const moveArmPose = async (poseType: ArmPose) => {
     if (!robotConfig.capabilities.hasArm || !robotConfig.topics.moveArmAction) {
-      console.warn('Robot does not support arm control');
+      console.warn("Robot does not support arm control");
       return;
     }
     const actionName = robotConfig.topics.moveArmAction;
-    const actionType = 'robomaster_hri_msgs/action/MoveArmPose';
+    const actionType = "robomaster_hri_msgs/action/MoveArmPose";
     const goal = { pose_type: poseType };
 
     await callGenericAction(actionName, actionType, goal);
@@ -756,20 +760,22 @@ export default function ActionsPanel({
   const publishPanicSignal = () => {
     if (ros) {
       // Log the panic event
-      logSystemEvent('panic_signal', {
+      logSystemEvent("panic_signal", {
         repeat_count: 5,
         interval_ms: 100,
       });
 
       if (!robotConfig.topics.panic) {
-        console.warn('Robot does not support panic signal');
+        console.warn("Robot does not support panic signal");
         return;
       }
-      console.log(`Publishing panic signal to ${robotConfig.topics.panic} 5 times`);
+      console.log(
+        `Publishing panic signal to ${robotConfig.topics.panic} 5 times`,
+      );
       const panicPublisher = new ROSLIB.Topic({
         ros,
         name: robotConfig.topics.panic,
-        messageType: 'std_msgs/Empty',
+        messageType: "std_msgs/Empty",
       });
 
       const msg = new ROSLIB.Message({});
@@ -778,7 +784,7 @@ export default function ActionsPanel({
       const interval = setInterval(() => {
         if (count >= 5) {
           clearInterval(interval);
-          console.log('Panic signal published 5 times.');
+          console.log("Panic signal published 5 times.");
           return;
         }
         panicPublisher.publish(msg);
@@ -787,7 +793,7 @@ export default function ActionsPanel({
       }, 100); // Publish every 100ms
     } else {
       console.error(
-        'ROS connection is not available. Cannot publish panic signal.'
+        "ROS connection is not available. Cannot publish panic signal.",
       );
     }
   };
@@ -795,11 +801,11 @@ export default function ActionsPanel({
   // --- Gripper control ---
   const handleGripper = async (targetState: GripperState) => {
     if (!robotConfig.capabilities.hasArm || !robotConfig.topics.gripperAction) {
-      console.warn('Robot does not support gripper control');
+      console.warn("Robot does not support gripper control");
       return;
     }
     const actionName = robotConfig.topics.gripperAction;
-    const actionType = 'robomaster_msgs/action/GripperControl';
+    const actionType = "robomaster_msgs/action/GripperControl";
     const goal = {
       target_state: targetState,
       power: gripperPower,
@@ -809,9 +815,9 @@ export default function ActionsPanel({
 
   const happyChimeSong = async () => {
     // Log the complex sound event
-    logSoundEvent('happy_chime_sequence', {
+    logSoundEvent("happy_chime_sequence", {
       sequence: [263, 264, 265, 262, 263, 264, 265],
-      timing: 'sequential with delays',
+      timing: "sequential with delays",
     });
 
     playCustomSound(263);
@@ -826,7 +832,7 @@ export default function ActionsPanel({
   // --- Macro scenario actions ---
   const handleMacro = async (macro: MacroScenario) => {
     // Log the macro event
-    logMacroEvent('execute_macro', {
+    logMacroEvent("execute_macro", {
       macro_name: macro,
       macro_type: macro,
     });
@@ -847,13 +853,13 @@ export default function ActionsPanel({
         await moveArmPose(ArmPose.OPEN_BOX);
         break;
       case MacroScenario.ENCOURAGE_COLLAB:
-        ledFeedback('good', 8, 80);
+        ledFeedback("good", 8, 80);
         rotateOnSpot(2, robotConfig.movementParams.rotationSpeed);
         playCustomSound(262);
         break;
       case MacroScenario.PLAY_HAPPY_CHIME:
         // Blink green LED
-        ledFeedback('good', 4, 120);
+        ledFeedback("good", 4, 120);
         // Play happy chime
         happyChimeSong();
         break;
@@ -865,20 +871,20 @@ export default function ActionsPanel({
   // --- Feedback with intensity ---
   const handlePositiveFeedback = () => {
     // Log the positive feedback event
-    logSystemEvent('positive_feedback', {
+    logSystemEvent("positive_feedback", {
       feedback_level: feedbackLevel,
-      actions_triggered: getFeedbackActions(feedbackLevel, 'positive'),
+      actions_triggered: getFeedbackActions(feedbackLevel, "positive"),
     });
 
     // Level 1: green blink, Level 2: green blink + sound, Level 3: green blink + sound + spin
     if (feedbackLevel === 1) {
-      ledFeedback('good', 4, 120);
+      ledFeedback("good", 4, 120);
     } else if (feedbackLevel === 2) {
-      ledFeedback('good', 6, 80);
+      ledFeedback("good", 6, 80);
       for (let i = 0; i < 3; i++)
         setTimeout(() => playCustomSound(262), i * 600);
     } else {
-      ledFeedback('good', 8, 60);
+      ledFeedback("good", 8, 60);
       // for (let i = 0; i < 3; i++)
       //   setTimeout(() => playCustomSound(262), i * 600);
       happyChimeSong();
@@ -887,27 +893,37 @@ export default function ActionsPanel({
     }
   };
   const moveBack = (
-    distance = robotConfig.movementParams.backwardDistance,   // e.g., -0.1 m
-    speed = Math.min(Math.abs(robotConfig.movementParams.maxLinearSpeed || 0.3), 0.3) // cap to something safe
+    distance = robotConfig.movementParams.backwardDistance, // e.g., -0.1 m
+    speed = Math.min(
+      Math.abs(robotConfig.movementParams.maxLinearSpeed || 0.3),
+      0.3,
+    ), // cap to something safe
   ) => {
     if (!ros) {
-      console.error('ROS connection is not available. Cannot move back.');
+      console.error("ROS connection is not available. Cannot move back.");
       return;
     }
 
     // Ensure speed is positive; we’ll set the sign via direction
     const v = Math.max(0.05, Math.abs(speed)); // at least 5 cm/s so it’s visible
     const dir = distance < 0 ? -1 : 1;
-    const durationMs = Math.max(50, Math.round((Math.abs(distance) / v) * 1000));
+    const durationMs = Math.max(
+      50,
+      Math.round((Math.abs(distance) / v) * 1000),
+    );
     const periodMs = 100; // 10 Hz
     const ticks = Math.ceil(durationMs / periodMs);
 
-    logMovementEvent('move_backward', { distance, speed: dir * v, duration_ms: durationMs });
+    logMovementEvent("move_backward", {
+      distance,
+      speed: dir * v,
+      duration_ms: durationMs,
+    });
 
     const cmdVelTopic = new ROSLIB.Topic({
       ros,
       name: robotConfig.topics.cmdVel,
-      messageType: 'geometry_msgs/msg/Twist',
+      messageType: "geometry_msgs/msg/Twist",
     });
 
     let sent = 0;
@@ -916,7 +932,7 @@ export default function ActionsPanel({
         new ROSLIB.Message({
           linear: { x: dir * v, y: 0, z: 0 },
           angular: { x: 0, y: 0, z: 0 },
-        })
+        }),
       );
       sent++;
 
@@ -927,7 +943,7 @@ export default function ActionsPanel({
           new ROSLIB.Message({
             linear: { x: 0, y: 0, z: 0 },
             angular: { x: 0, y: 0, z: 0 },
-          })
+          }),
         );
       }
     }, periodMs);
@@ -935,19 +951,19 @@ export default function ActionsPanel({
 
   const handleNegativeFeedback = () => {
     // Log the negative feedback event
-    logSystemEvent('negative_feedback', {
+    logSystemEvent("negative_feedback", {
       feedback_level: feedbackLevel,
-      actions_triggered: getFeedbackActions(feedbackLevel, 'negative'),
+      actions_triggered: getFeedbackActions(feedbackLevel, "negative"),
     });
 
     // Level 1: red blink, Level 2: red blink + back, Level 3: red blink + more back
     if (feedbackLevel === 1) {
-      ledFeedback('bad', 2, 120);
+      ledFeedback("bad", 2, 120);
     } else if (feedbackLevel === 2) {
-      ledFeedback('bad', 4, 80);
+      ledFeedback("bad", 4, 80);
       moveBack();
     } else {
-      ledFeedback('bad', 6, 60);
+      ledFeedback("bad", 6, 60);
       moveBack(robotConfig.movementParams.backwardDistance * 2);
     }
   };
@@ -955,33 +971,33 @@ export default function ActionsPanel({
   // Helper function to describe feedback actions
   const getFeedbackActions = (
     level: number,
-    type: 'positive' | 'negative'
+    type: "positive" | "negative",
   ): string[] => {
-    if (type === 'positive') {
+    if (type === "positive") {
       switch (level) {
         case 1:
-          return ['led_blink_green_4x'];
+          return ["led_blink_green_4x"];
         case 2:
-          return ['led_blink_green_6x', 'sound_beep_3x'];
+          return ["led_blink_green_6x", "sound_beep_3x"];
         case 3:
           return [
-            'led_blink_green_8x',
-            'happy_chime_sequence',
-            'rotate_2_cycles',
+            "led_blink_green_8x",
+            "happy_chime_sequence",
+            "rotate_2_cycles",
           ];
         default:
-          return ['unknown'];
+          return ["unknown"];
       }
     } else {
       switch (level) {
         case 1:
-          return ['led_blink_red_2x'];
+          return ["led_blink_red_2x"];
         case 2:
-          return ['led_blink_red_4x', 'move_back_0.2m'];
+          return ["led_blink_red_4x", "move_back_0.2m"];
         case 3:
-          return ['led_blink_red_6x', 'move_back_0.4m'];
+          return ["led_blink_red_6x", "move_back_0.4m"];
         default:
-          return ['unknown'];
+          return ["unknown"];
       }
     }
   };
@@ -996,320 +1012,337 @@ export default function ActionsPanel({
       mt={2}
     >
       {/* Robot Position/TF Section */}
-      {showRobotPosition && <Box minWidth={240}>
-        <Typography variant="h6">Robot Position (TF)</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Card variant="outlined" sx={{ mb: 2 }}>
-          <CardContent sx={{ padding: 1 }}>
-            {tfConnected && tfData ? (
-              <Stack spacing={1}>
-                <Typography variant="caption" color="success.main">
-                  ✓ Connected to /tf
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Frame: robomaster/base_link → robomaster/odom
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Position:</strong>
-                </Typography>
-                <Typography variant="caption" component="div">
-                  X: {tfData.position.x.toFixed(3)} m
-                </Typography>
-                <Typography variant="caption" component="div">
-                  Y: {tfData.position.y.toFixed(3)} m
-                </Typography>
-                <Typography variant="caption" component="div">
-                  Z: {tfData.position.z.toFixed(3)} m
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  <strong>Orientation (RPY):</strong>
-                </Typography>
-                {(() => {
-                  const euler = quaternionToEuler(tfData.orientation);
-                  return (
-                    <>
-                      <Typography variant="caption" component="div">
-                        Roll: {euler.roll.toFixed(1)}°
-                      </Typography>
-                      <Typography variant="caption" component="div">
-                        Pitch: {euler.pitch.toFixed(1)}°
-                      </Typography>
-                      <Typography variant="caption" component="div">
-                        Yaw: {euler.yaw.toFixed(1)}°
-                      </Typography>
-                    </>
-                  );
-                })()}
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
-                  Last update: {new Date(tfData.timestamp).toLocaleTimeString()}
-                </Typography>
-              </Stack>
-            ) : (
-              <Stack spacing={1} alignItems="center">
-                <Typography variant="caption" color="error.main">
-                  ✗ No TF data
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Waiting for /tf messages...
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ROS Connected: {ros?.isConnected ? '✓' : '✗'}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontSize: '0.7rem' }}
-                >
-                  Looking for: robomaster/base_link
-                </Typography>
-              </Stack>
-            )}
-          </CardContent>
-        </Card>
-      </Box>}
+      {showRobotPosition && (
+        <Box minWidth={240}>
+          <Typography variant="h6">Robot Position (TF)</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Card variant="outlined" sx={{ mb: 2 }}>
+            <CardContent sx={{ padding: 1 }}>
+              {tfConnected && tfData ? (
+                <Stack spacing={1}>
+                  <Typography variant="caption" color="success.main">
+                    ✓ Connected to /tf
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Frame: robomaster/base_link → robomaster/odom
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Position:</strong>
+                  </Typography>
+                  <Typography variant="caption" component="div">
+                    X: {tfData.position.x.toFixed(3)} m
+                  </Typography>
+                  <Typography variant="caption" component="div">
+                    Y: {tfData.position.y.toFixed(3)} m
+                  </Typography>
+                  <Typography variant="caption" component="div">
+                    Z: {tfData.position.z.toFixed(3)} m
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    <strong>Orientation (RPY):</strong>
+                  </Typography>
+                  {(() => {
+                    const euler = quaternionToEuler(tfData.orientation);
+                    return (
+                      <>
+                        <Typography variant="caption" component="div">
+                          Roll: {euler.roll.toFixed(1)}°
+                        </Typography>
+                        <Typography variant="caption" component="div">
+                          Pitch: {euler.pitch.toFixed(1)}°
+                        </Typography>
+                        <Typography variant="caption" component="div">
+                          Yaw: {euler.yaw.toFixed(1)}°
+                        </Typography>
+                      </>
+                    );
+                  })()}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    Last update:{" "}
+                    {new Date(tfData.timestamp).toLocaleTimeString()}
+                  </Typography>
+                </Stack>
+              ) : (
+                <Stack spacing={1} alignItems="center">
+                  <Typography variant="caption" color="error.main">
+                    ✗ No TF data
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Waiting for /tf messages...
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    ROS Connected: {ros?.isConnected ? "✓" : "✗"}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontSize: "0.7rem" }}
+                  >
+                    Looking for: robomaster/base_link
+                  </Typography>
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+      )}
 
       {/* Experiment Control Section */}
-      {showExperimentControl && <Box minWidth={220}>
-        <ExperimentControl
-          manualIp={manualIp}
-          onSessionChange={handleSessionChange}
-          exportLogsAsJsonl={exportLogsAsJsonl}
-          saveAllLogsToServer={saveAllLogsToServer}
-        />
-      </Box>}
+      {showExperimentControl && (
+        <Box minWidth={220}>
+          <ExperimentControl
+            manualIp={manualIp}
+            onSessionChange={handleSessionChange}
+            exportLogsAsJsonl={exportLogsAsJsonl}
+            saveAllLogsToServer={saveAllLogsToServer}
+          />
+        </Box>
+      )}
 
       {/* LEDs Section */}
-      {showLeds && <Box minWidth={220}>
-        <Typography variant="h6">LEDs</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Stack spacing={1}>
-          <Button
-            variant="outlined"
-            onClick={() => publishLedColor(1, 0, 0, ledIntensity)}
-          >
-            Red
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => publishLedColor(0, 1, 0, ledIntensity)}
-          >
-            Green
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => publishLedColor(0, 0, 1, ledIntensity)}
-          >
-            Blue
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => publishLedColor(1, 0.2, 0.0, ledIntensity)}
-          >
-            Orange
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => publishLedColor(0.21, 0.27, 0.31, ledIntensity)}
-          >
-            Gray
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => publishLedColor(1, 1, 1, ledIntensity)}
-          >
-            White
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => publishLedColor(1, 1, 0, ledIntensity)}
-          >
-            Yellow
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => publishLedColor(0, 0, 0, 0)}
-          >
-            Off
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => ledFeedback('good', ledBlinkTimes, ledBlinkSpeed)}
-          >
-            Blink Green
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => ledFeedback('bad', ledBlinkTimes, ledBlinkSpeed)}
-          >
-            Blink Red
-          </Button>
-          <Typography variant="caption">Intensity</Typography>
-          <Slider
-            min={0}
-            max={1}
-            step={0.05}
-            value={ledIntensity}
-            onChange={(_, v) => setLedIntensity(Number(v))}
-          />
-          <Typography variant="caption">Blink Times</Typography>
-          <Slider
-            min={1}
-            max={10}
-            step={1}
-            value={ledBlinkTimes}
-            onChange={(_, v) => setLedBlinkTimes(Number(v))}
-          />
-          <Typography variant="caption">Blink Speed (ms)</Typography>
-          <Slider
-            min={50}
-            max={500}
-            step={10}
-            value={ledBlinkSpeed}
-            onChange={(_, v) => setLedBlinkSpeed(Number(v))}
-          />
-        </Stack>
-      </Box>}
+      {showLeds && (
+        <Box minWidth={220}>
+          <Typography variant="h6">LEDs</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => publishLedColor(1, 0, 0, ledIntensity)}
+            >
+              Red
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => publishLedColor(0, 1, 0, ledIntensity)}
+            >
+              Green
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => publishLedColor(0, 0, 1, ledIntensity)}
+            >
+              Blue
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => publishLedColor(1, 0.2, 0.0, ledIntensity)}
+            >
+              Orange
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => publishLedColor(0.21, 0.27, 0.31, ledIntensity)}
+            >
+              Gray
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => publishLedColor(1, 1, 1, ledIntensity)}
+            >
+              White
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => publishLedColor(1, 1, 0, ledIntensity)}
+            >
+              Yellow
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => publishLedColor(0, 0, 0, 0)}
+            >
+              Off
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => ledFeedback("good", ledBlinkTimes, ledBlinkSpeed)}
+            >
+              Blink Green
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => ledFeedback("bad", ledBlinkTimes, ledBlinkSpeed)}
+            >
+              Blink Red
+            </Button>
+            <Typography variant="caption">Intensity</Typography>
+            <Slider
+              min={0}
+              max={1}
+              step={0.05}
+              value={ledIntensity}
+              onChange={(_, v) => setLedIntensity(Number(v))}
+            />
+            <Typography variant="caption">Blink Times</Typography>
+            <Slider
+              min={1}
+              max={10}
+              step={1}
+              value={ledBlinkTimes}
+              onChange={(_, v) => setLedBlinkTimes(Number(v))}
+            />
+            <Typography variant="caption">Blink Speed (ms)</Typography>
+            <Slider
+              min={50}
+              max={500}
+              step={10}
+              value={ledBlinkSpeed}
+              onChange={(_, v) => setLedBlinkSpeed(Number(v))}
+            />
+          </Stack>
+        </Box>
+      )}
       {/* Gripper Section */}
-      {showGripper && <Box minWidth={180}>
-        <Typography variant="h6">Gripper</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Stack spacing={1}>
-          <Button
-            variant="outlined"
-            onClick={() => handleGripper(GripperState.OPEN)}
-          >
-            Open Gripper
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => handleGripper(GripperState.CLOSE)}
-          >
-            Close Gripper
-          </Button>
-        </Stack>
-      </Box>}
+      {showGripper && (
+        <Box minWidth={180}>
+          <Typography variant="h6">Gripper</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => handleGripper(GripperState.OPEN)}
+            >
+              Open Gripper
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => handleGripper(GripperState.CLOSE)}
+            >
+              Close Gripper
+            </Button>
+          </Stack>
+        </Box>
+      )}
       {/* Arm/Box Section */}
-      {showArm && <Box minWidth={200}>
-        <Typography variant="h6">Arm / Box</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Stack spacing={1}>
-          <Button
-            variant="outlined"
-            onClick={() => moveArmPose(ArmPose.OPEN_BOX)}
-          >
-            Open Box
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => moveArmPose(ArmPose.CLOSE_BOX)}
-          >
-            Close Box
-          </Button>
-        </Stack>
-      </Box>}
+      {showArm && (
+        <Box minWidth={200}>
+          <Typography variant="h6">Arm / Box</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => moveArmPose(ArmPose.OPEN_BOX)}
+            >
+              Open Box
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => moveArmPose(ArmPose.CLOSE_BOX)}
+            >
+              Close Box
+            </Button>
+          </Stack>
+        </Box>
+      )}
       {/* Feedback Section */}
-      {showFeedback && <Box minWidth={220}>
-        <Typography variant="h6">Feedback</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Stack spacing={1}>
-          <Button
-            variant="contained"
-            color="success"
-            onClick={handlePositiveFeedback}
-          >
-            Positive Feedback
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleNegativeFeedback}
-          >
-            Negative Feedback
-          </Button>
-          <Typography variant="caption">Feedback Intensity</Typography>
-          <Slider
-            min={1}
-            max={3}
-            step={1}
-            value={feedbackLevel}
-            onChange={(_, v) => setFeedbackLevel(Number(v))}
-            marks={[
-              { value: 1, label: '1' },
-              { value: 2, label: '2' },
-              { value: 3, label: '3' },
-            ]}
-          />
-        </Stack>
-      </Box>}
+      {showFeedback && (
+        <Box minWidth={220}>
+          <Typography variant="h6">Feedback</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handlePositiveFeedback}
+            >
+              Positive Feedback
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleNegativeFeedback}
+            >
+              Negative Feedback
+            </Button>
+            <Typography variant="caption">Feedback Intensity</Typography>
+            <Slider
+              min={1}
+              max={3}
+              step={1}
+              value={feedbackLevel}
+              onChange={(_, v) => setFeedbackLevel(Number(v))}
+              marks={[
+                { value: 1, label: "1" },
+                { value: 2, label: "2" },
+                { value: 3, label: "3" },
+              ]}
+            />
+          </Stack>
+        </Box>
+      )}
       {/* Macro Scenarios Section */}
-      {showMacroScenarios && <Box minWidth={220}>
-        <Typography variant="h6">Macro Scenarios</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Stack spacing={1}>
-          <Button
-            variant="outlined"
-            onClick={() => handleMacro(MacroScenario.SHARE_LEGO)}
-          >
-            Ask to Share LEGO
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => handleMacro(MacroScenario.PASS_PIECE_KID1)}
-          >
-            Pass Piece to Kid 1
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => handleMacro(MacroScenario.PASS_PIECE_KID2)}
-          >
-            Pass Piece to Kid 2
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => handleMacro(MacroScenario.ENCOURAGE_COLLAB)}
-          >
-            Encourage Collaboration
-          </Button>
-        </Stack>
-      </Box>}
+      {showMacroScenarios && (
+        <Box minWidth={220}>
+          <Typography variant="h6">Macro Scenarios</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => handleMacro(MacroScenario.SHARE_LEGO)}
+            >
+              Ask to Share LEGO
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => handleMacro(MacroScenario.PASS_PIECE_KID1)}
+            >
+              Pass Piece to Kid 1
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => handleMacro(MacroScenario.PASS_PIECE_KID2)}
+            >
+              Pass Piece to Kid 2
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => handleMacro(MacroScenario.ENCOURAGE_COLLAB)}
+            >
+              Encourage Collaboration
+            </Button>
+          </Stack>
+        </Box>
+      )}
       {/* Movement Section */}
-      {showMovement && <Box minWidth={200}>
-        <Typography variant="h6">Movement</Typography>
-        <Divider sx={{ mb: 1 }} />
-        <Stack spacing={1}>
-          <Button
-            variant="outlined"
-            onClick={() => moveToPosition(Positions.KID1)}
-          >
-            Go to Kid 1
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => moveToPosition(Positions.KID2)}
-          >
-            Go to Kid 2
-          </Button>
-          <Button
-            variant="outlined"
-            color="warning"
-            onClick={() => moveToPosition(Positions.ORIGIN)}
-          >
-            Go to Origin
-          </Button>
-          <Typography variant="caption">Speed</Typography>
-          <Slider
-            min={0.1}
-            max={1}
-            step={0.05}
-            value={moveSpeed}
-            onChange={(_, v) => setMoveSpeed(Number(v))}
-          />
-        </Stack>
-      </Box>}
+      {showMovement && (
+        <Box minWidth={200}>
+          <Typography variant="h6">Movement</Typography>
+          <Divider sx={{ mb: 1 }} />
+          <Stack spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={() => moveToPosition(Positions.KID1)}
+            >
+              Go to Kid 1
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => moveToPosition(Positions.KID2)}
+            >
+              Go to Kid 2
+            </Button>
+            <Button
+              variant="outlined"
+              color="warning"
+              onClick={() => moveToPosition(Positions.ORIGIN)}
+            >
+              Go to Origin
+            </Button>
+            <Typography variant="caption">Speed</Typography>
+            <Slider
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={moveSpeed}
+              onChange={(_, v) => setMoveSpeed(Number(v))}
+            />
+          </Stack>
+        </Box>
+      )}
       {/* )} */}
       {/* Panic Button Section - Only show if robot has panic */}
       {showPanic && robotConfig.topics.panic && (

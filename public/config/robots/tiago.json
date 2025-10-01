@@ -1,0 +1,30 @@
+{
+  "name": "tiago",
+  "displayName": "TIAGo Robot",
+  "description": "PAL Robotics TIAGo mobile manipulator robot",
+  "topics": {
+    "cmdVel": "/mobile_base_controller/cmd_vel_unstamped",
+    "odom": "/mobile_base_controller/odom",
+    "rgbCamera": "/head_front_camera/rgb/image_raw",
+    "moveArmAction": "/arm_controller/joint_trajectory",
+    "gripperAction": "/gripper_controller/joint_trajectory"
+  },
+  "movementParams": {
+    "maxLinearSpeed": 1.0,
+    "maxAngularSpeed": 1.0,
+    "rotationSpeed": 0.8,
+    "backwardDistance": -0.1,
+    "backwardDuration": 500,
+    "wigglePhase1": 0.7,
+    "wigglePhase2": 1.4,
+    "wigglePhase3": 0.7,
+    "wiggleRateHz": 10
+  },
+  "capabilities": {
+    "hasCamera": true,
+    "hasMovement": true,
+    "hasArm": true,
+    "hasLeds": false,
+    "hasSound": false
+  }
+}
