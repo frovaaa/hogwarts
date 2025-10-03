@@ -493,18 +493,38 @@ export default function ActionsPanel({
   };
 
   // Gripper control functions
-  const handleGripper = async (targetState: GripperState) => {
-    if (!robotConfig.capabilities.hasArm || !robotConfig.topics.gripperAction) {
+  const handleSemanticGripper = async (action: string, force: number = gripperPower) => {
+    if (!robotConfig.capabilities.hasArm || !robotConfig.topics.gripper) {
       console.warn('Robot does not support gripper control');
       return;
     }
-    const actionName = robotConfig.topics.gripperAction;
-    const actionType = 'robomaster_msgs/action/GripperControl';
-    const goal = {
-      target_state: targetState,
-      power: gripperPower,
-    };
-    await callGenericAction(actionName, actionType, goal);
+    
+    if (!ros) {
+      console.error('ROS connection is not available');
+      return;
+    }
+    
+    const msg = new ROSLIB.Message({
+      data: JSON.stringify({
+        action: action,
+        force: force,
+        timestamp: Date.now()
+      })
+    });
+    
+    const gripperPublisher = new ROSLIB.Topic({
+      ros,
+      name: robotConfig.topics.gripper,
+      messageType: 'std_msgs/String',
+    });
+    
+    console.log(`Semantic gripper command sent: ${action}`);
+    logGripperEvent('semantic_gripper', {
+      action: action,
+      force: force
+    });
+    
+    gripperPublisher.publish(msg);
   };
 
   // Feedback functions
@@ -773,7 +793,7 @@ export default function ActionsPanel({
       {robotConfig.capabilities.hasArm && (
         <RobotArmPanel
           onArmPose={moveArmPose}
-          onGripper={handleGripper}
+          onSemanticGripper={handleSemanticGripper}
           showGripper={showGripper}
           showArm={showArm}
         />

@@ -3,7 +3,7 @@
 import { Box, Button, Typography, Divider, Stack } from '@mui/material';
 import ROSLIB from 'roslib';
 import { useRosContext } from '../../hooks/useRosContext';
-import { MacroScenario } from '../ActionsPanel';
+
 
 interface SoundControlPanelProps {
   ros: ROSLIB.Ros | null;
@@ -16,74 +16,57 @@ export default function SoundControlPanel({
 }: SoundControlPanelProps) {
   const { robotConfig } = useRosContext();
 
-  const playCustomSound = (sound_id: number = 262) => {
+  const playSemanticSound = (soundType: string) => {
     if (!ros) {
       console.error('ROS connection is not available. Cannot play sound.');
       return;
     }
 
     // Log the sound event
-    logSoundEvent('play_sound', {
-      sound_id: sound_id,
-      sound_name: getSoundName(sound_id),
+    logSoundEvent('play_semantic_sound', {
+      sound_type: soundType,
+      timestamp: Date.now(),
     });
 
     if (!robotConfig.capabilities.hasSound || !robotConfig.topics.sound) {
       console.warn('Robot does not support sound');
       return;
     }
+
+    const soundMsg = new ROSLIB.Message({
+      data: JSON.stringify({
+        action: 'play_sound',
+        sound_type: soundType,
+        timestamp: Date.now()
+      })
+    });
+
     const soundTopic = new ROSLIB.Topic({
       ros,
       name: robotConfig.topics.sound,
-      messageType: 'robomaster_msgs/msg/SpeakerCommand',
+      messageType: 'std_msgs/String',
     });
-    soundTopic.publish(
-      new ROSLIB.Message({
-        control: 1,
-        sound_id,
-        times: 1,
-      })
-    );
-    setTimeout(() => {
-      soundTopic.publish(
-        new ROSLIB.Message({
-          control: 0,
-          sound_id,
-        })
-      );
-    }, 500);
+
+    soundTopic.publish(soundMsg);
+    console.log(`Semantic sound command sent: ${soundType}`);
   };
 
-  // Helper function to get sound name for logging
-  const getSoundName = (soundId: number): string => {
-    switch (soundId) {
-      case 262:
-        return 'beep';
-      case 263:
-        return 'chime';
-      case 264:
-        return 'melody';
-      case 265:
-        return 'note';
-      default:
-        return `custom_sound_${soundId}`;
-    }
-  };
+
 
   const happyChimeSong = async () => {
     // Log the complex sound event
     logSoundEvent('happy_chime_sequence', {
-      sequence: [263, 264, 265, 262, 263, 264, 265],
+      sequence: ['chime', 'melody', 'note', 'beep', 'chime', 'melody', 'note'],
       timing: 'sequential with delays',
     });
 
-    playCustomSound(263);
-    setTimeout(() => playCustomSound(264), 200);
-    setTimeout(() => playCustomSound(265), 300);
-    setTimeout(() => playCustomSound(262), 400);
-    setTimeout(() => playCustomSound(263), 500);
-    setTimeout(() => playCustomSound(264), 600);
-    setTimeout(() => playCustomSound(265), 700);
+    playSemanticSound('chime');
+    setTimeout(() => playSemanticSound('melody'), 200);
+    setTimeout(() => playSemanticSound('note'), 300);
+    setTimeout(() => playSemanticSound('beep'), 400);
+    setTimeout(() => playSemanticSound('chime'), 500);
+    setTimeout(() => playSemanticSound('melody'), 600);
+    setTimeout(() => playSemanticSound('note'), 700);
   };
 
   if (!robotConfig.capabilities.hasSound) {
@@ -95,13 +78,13 @@ export default function SoundControlPanel({
       <Typography variant='h6'>Sounds</Typography>
       <Divider sx={{ mb: 1 }} />
       <Stack spacing={1}>
-        <Button variant='outlined' onClick={() => playCustomSound(262)}>
+        <Button variant='outlined' onClick={() => playSemanticSound('beep')}>
           Beep
         </Button>
-        <Button variant='outlined' onClick={() => playCustomSound(263)}>
+        <Button variant='outlined' onClick={() => playSemanticSound('chime')}>
           Chime
         </Button>
-        <Button variant='outlined' onClick={() => playCustomSound(264)}>
+        <Button variant='outlined' onClick={() => playSemanticSound('melody')}>
           Melody
         </Button>
         <Button variant='outlined' onClick={() => happyChimeSong()}>

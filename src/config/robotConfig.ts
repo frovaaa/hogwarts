@@ -15,6 +15,7 @@ export interface RobotTopicConfig {
   leds?: string;
   sound?: string;
   panic?: string;
+  gripper?: string;
 
   // External tracking (OptiTrack, etc.)
   externalPose?: string;

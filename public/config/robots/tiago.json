@@ -7,7 +7,8 @@
     "odom": "/mobile_base_controller/odom",
     "rgbCamera": "/head_front_camera/rgb/image_raw",
     "moveArmAction": "/arm_controller/joint_trajectory",
-    "gripperAction": "/gripper_controller/joint_trajectory",
+    "gripper": "/dashboard/gripper",
+    "sound": "/dashboard/sound",
     "gotoPosition": "/dashboard/goto_position",
     "panic": "/dashboard/panic"
   },

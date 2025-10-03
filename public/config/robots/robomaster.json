@@ -8,9 +8,9 @@
     "rgbCamera": "/robomaster/camera/image_color",
     "moveRobotAction": "/robomaster/move_robot_world_ref",
     "moveArmAction": "/robomaster/move_arm_pose",
-    "gripperAction": "/robomaster/gripper",
     "leds": "/robomaster/leds/color",
-    "sound": "/robomaster/cmd_sound",
+    "sound": "/dashboard/sound",
+    "gripper": "/dashboard/gripper",
     "panic": "/robomaster/panic",
     "externalPose": "/optitrack/robomaster_frova",
     "gotoPosition": "/dashboard/goto_position"

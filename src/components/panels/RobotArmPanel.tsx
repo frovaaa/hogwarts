@@ -1,18 +1,18 @@
 'use client';
 
 import { Box, Button, Typography, Divider, Stack } from '@mui/material';
-import { ArmPose, GripperState } from '../ActionsPanel';
+import { ArmPose } from '../ActionsPanel';
 
 interface RobotArmPanelProps {
   onArmPose: (pose: ArmPose) => Promise<void>;
-  onGripper: (state: GripperState) => Promise<void>;
+  onSemanticGripper: (action: string, force?: number) => Promise<void>;
   showGripper: boolean;
   showArm: boolean;
 }
 
 export default function RobotArmPanel({
   onArmPose,
-  onGripper,
+  onSemanticGripper,
   showGripper,
   showArm,
 }: RobotArmPanelProps) {
@@ -30,13 +30,13 @@ export default function RobotArmPanel({
           <Stack spacing={1}>
             <Button
               variant='outlined'
-              onClick={() => onGripper(GripperState.OPEN)}
+              onClick={() => onSemanticGripper('open')}
             >
               Open Gripper
             </Button>
             <Button
               variant='outlined'
-              onClick={() => onGripper(GripperState.CLOSE)}
+              onClick={() => onSemanticGripper('close')}
             >
               Close Gripper
             </Button>

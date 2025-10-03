@@ -64,9 +64,9 @@ const topicDescriptions = {
   rgbCamera: 'RGB camera image topic',
   moveRobotAction: 'Action server for robot navigation',
   moveArmAction: 'Action server for arm movement',
-  gripperAction: 'Action server for gripper control',
+  gripper: 'Gripper control topic (semantic JSON commands)',
   leds: 'LED control topic',
-  sound: 'Sound/audio command topic',
+  sound: 'Sound command topic (semantic JSON commands)',
   panic: 'Emergency stop topic',
   externalPose: 'External pose tracking topic (e.g., OptiTrack)',
   gotoPosition: 'Semantic position navigation topic',
@@ -90,6 +90,8 @@ export default function RobotConfigWizard({
       odom: '',
       gotoPosition: '/dashboard/goto_position',
       panic: '/dashboard/panic',
+      sound: '/dashboard/sound',
+      gripper: '/dashboard/gripper',
     },
     movementParams: {
       maxLinearSpeed: 1.0,
@@ -126,6 +128,8 @@ export default function RobotConfigWizard({
           odom: '',
           gotoPosition: '/dashboard/goto_position',
           panic: '/dashboard/panic',
+          sound: '/dashboard/sound',
+          gripper: '/dashboard/gripper',
         },
         movementParams: {
           maxLinearSpeed: 1.0,
@@ -530,7 +534,7 @@ export default function RobotConfigWizard({
               <Typography variant='body2' color='text.secondary' paragraph>
                 Define position labels that your robot can navigate to. These will appear as buttons in the Movement panel.
               </Typography>
-              
+
               <Grid container spacing={2}>
                 {(config.semanticPositions || []).map((position, index) => (
                   <Grid size={{ xs: 12, md: 6 }} key={index}>
@@ -566,7 +570,7 @@ export default function RobotConfigWizard({
                     </Box>
                   </Grid>
                 ))}
-                
+
                 <Grid size={12}>
                   <Button
                     startIcon={<AddIcon />}
@@ -703,7 +707,9 @@ export default function RobotConfigWizard({
                   (topicKey === 'rgbCamera' && config.capabilities.hasCamera) ||
                   ((topicKey === 'cmdVel' || topicKey === 'odom' || topicKey === 'gotoPosition') &&
                     config.capabilities.hasMovement) ||
-                  (topicKey === 'panic' && config.capabilities.hasPanic);
+                  (topicKey === 'panic' && config.capabilities.hasPanic) ||
+                  (topicKey === 'sound' && config.capabilities.hasSound) ||
+                  (topicKey === 'gripper' && config.capabilities.hasArm);
 
                 if (!isRelevant) return null;
 
