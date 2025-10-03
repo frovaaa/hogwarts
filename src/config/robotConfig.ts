@@ -18,6 +18,9 @@ export interface RobotTopicConfig {
 
   // External tracking (OptiTrack, etc.)
   externalPose?: string;
+
+  // Semantic command topics
+  gotoPosition?: string;
 }
 
 export interface RobotMovementParams {
@@ -46,6 +49,7 @@ export interface RobotConfig {
     hasSound: boolean;
     hasPanic: boolean;
   };
+  semanticPositions?: string[];
 }
 
 // Robot configurations cache

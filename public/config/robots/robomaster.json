@@ -12,7 +12,8 @@
     "leds": "/robomaster/leds/color",
     "sound": "/robomaster/cmd_sound",
     "panic": "/robomaster/panic",
-    "externalPose": "/optitrack/robomaster_frova"
+    "externalPose": "/optitrack/robomaster_frova",
+    "gotoPosition": "/dashboard/goto_position"
   },
   "movementParams": {
     "maxLinearSpeed": 3.5,
@@ -32,5 +33,6 @@
     "hasLeds": true,
     "hasSound": true,
     "hasPanic": true
-  }
+  },
+  "semanticPositions": ["user1", "user2", "origin", "center"]
 }

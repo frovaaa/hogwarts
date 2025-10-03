@@ -230,6 +230,7 @@ export default function Homepage() {
                 onActionResult={handleActionResult}
                 onSessionChange={handleSessionChange}
                 sectionVisibility={sectionVisibility}
+                moveSpeed={moveSpeed}
               />
               {robotConfig.capabilities.hasMovement && (
                 <Box display='flex' flexDirection='column' alignItems='center'>

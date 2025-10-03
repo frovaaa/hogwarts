@@ -7,7 +7,8 @@
     "odom": "/mobile_base_controller/odom",
     "rgbCamera": "/head_front_camera/rgb/image_raw",
     "moveArmAction": "/arm_controller/joint_trajectory",
-    "gripperAction": "/gripper_controller/joint_trajectory"
+    "gripperAction": "/gripper_controller/joint_trajectory",
+    "gotoPosition": "/dashboard/goto_position"
   },
   "movementParams": {
     "maxLinearSpeed": 1.0,
@@ -27,5 +28,6 @@
     "hasLeds": false,
     "hasSound": false,
     "hasPanic": false
-  }
+  },
+  "semanticPositions": ["user1", "user2", "origin", "center"]
 }

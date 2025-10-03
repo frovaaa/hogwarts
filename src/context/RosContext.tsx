@@ -64,11 +64,30 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
       setAvailableConfigs(allConfigs);
       setConfigsLoaded(true);
 
-      // If current robot config is not available, switch to default
-      if (!allConfigs[robotConfig.name]) {
+      // Try to restore previously selected robot type
+      const savedRobotType = typeof window !== 'undefined' 
+        ? localStorage.getItem('selectedRobotType')
+        : null;
+      
+      let robotToSelect: string | null = null;
+      
+      // Priority: saved robot type if available, current if available, first available
+      if (savedRobotType && allConfigs[savedRobotType]) {
+        robotToSelect = savedRobotType;
+      } else if (allConfigs[robotConfig.name]) {
+        robotToSelect = robotConfig.name;
+      } else {
         const configNames = Object.keys(allConfigs);
         if (configNames.length > 0) {
-          setRobotConfig(allConfigs[configNames[0]]);
+          robotToSelect = configNames[0];
+        }
+      }
+      
+      if (robotToSelect && robotToSelect !== robotConfig.name) {
+        setRobotConfig(allConfigs[robotToSelect]);
+        // Update localStorage with the selected robot
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('selectedRobotType', robotToSelect);
         }
       }
     } catch (error) {
@@ -83,6 +102,11 @@ export const RosProvider = ({ children }: { children: React.ReactNode }) => {
   const setRobotType = (robotName: string) => {
     const config = availableConfigs[robotName] || getRobotConfig(robotName);
     setRobotConfig(config);
+    
+    // Persist robot selection to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedRobotType', robotName);
+    }
   };
 
   /**

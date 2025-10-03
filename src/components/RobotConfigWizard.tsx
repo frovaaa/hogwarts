@@ -69,6 +69,7 @@ const topicDescriptions = {
   sound: 'Sound/audio command topic',
   panic: 'Emergency stop topic',
   externalPose: 'External pose tracking topic (e.g., OptiTrack)',
+  gotoPosition: 'Semantic position navigation topic',
 };
 
 export default function RobotConfigWizard({
@@ -87,6 +88,7 @@ export default function RobotConfigWizard({
     topics: {
       cmdVel: '',
       odom: '',
+      gotoPosition: '/dashboard/goto_position',
     },
     movementParams: {
       maxLinearSpeed: 1.0,
@@ -103,6 +105,7 @@ export default function RobotConfigWizard({
       hasSound: false,
       hasPanic: false,
     },
+    semanticPositions: [],
   });
 
   const [errors, setErrors] = useState<string[]>([]);
@@ -120,6 +123,7 @@ export default function RobotConfigWizard({
         topics: {
           cmdVel: '',
           odom: '',
+          gotoPosition: '/dashboard/goto_position',
         },
         movementParams: {
           maxLinearSpeed: 1.0,
@@ -136,6 +140,7 @@ export default function RobotConfigWizard({
           hasSound: false,
           hasPanic: false,
         },
+        semanticPositions: [],
       });
     }
   }, [editConfig, open]);
@@ -200,7 +205,7 @@ export default function RobotConfigWizard({
   const validateConfig = (): string[] => {
     const errors: string[] = [];
 
-    // Validate all steps
+    // Validate all steps (except review step)
     for (let i = 0; i < 4; i++) {
       errors.push(...validateStep(i));
     }
@@ -249,6 +254,7 @@ export default function RobotConfigWizard({
 
     if (config.capabilities.hasMovement) {
       required.push('cmdVel', 'odom');
+      // gotoPosition is optional - it will show with default value
     }
     if (config.capabilities.hasCamera) required.push('rgbCamera');
     if (config.capabilities.hasArm) {
@@ -411,6 +417,19 @@ export default function RobotConfigWizard({
         );
 
       case 2: // Movement Parameters
+        if (!config.capabilities.hasMovement) {
+          return (
+            <Box>
+              <Typography variant='h6' gutterBottom>
+                Movement Parameters
+              </Typography>
+              <Alert severity='info'>
+                Movement capability is not enabled. Enable movement in the previous step to configure movement parameters.
+              </Alert>
+            </Box>
+          );
+        }
+
         return (
           <Grid container spacing={3}>
             <Grid size={12}>
@@ -418,7 +437,7 @@ export default function RobotConfigWizard({
                 Movement Parameters
               </Typography>
               <Typography variant='body2' color='text.secondary' paragraph>
-                Configure the robot's movement limits and behavior parameters.
+                Configure the robot's movement limits, behavior parameters, and semantic positions.
               </Typography>
             </Grid>
 
@@ -498,6 +517,78 @@ export default function RobotConfigWizard({
                 }
                 inputProps={{ step: 100, min: 0 }}
               />
+            </Grid>
+
+            {/* Semantic Positions Section */}
+            <Grid size={12}>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant='h6' gutterBottom>
+                Semantic Positions
+              </Typography>
+              <Typography variant='body2' color='text.secondary' paragraph>
+                Define position labels that your robot can navigate to. These will appear as buttons in the Movement panel.
+              </Typography>
+              
+              <Grid container spacing={2}>
+                {(config.semanticPositions || []).map((position, index) => (
+                  <Grid size={{ xs: 12, md: 6 }} key={index}>
+                    <Box display='flex' alignItems='center' gap={1}>
+                      <TextField
+                        fullWidth
+                        label={`Position ${index + 1}`}
+                        value={position}
+                        onChange={(e) => {
+                          const newPositions = [...(config.semanticPositions || [])];
+                          newPositions[index] = e.target.value;
+                          setConfig(prev => ({
+                            ...prev,
+                            semanticPositions: newPositions
+                          }));
+                        }}
+                        placeholder="e.g., user1, storage, home"
+                      />
+                      <IconButton
+                        onClick={() => {
+                          const newPositions = [...(config.semanticPositions || [])];
+                          newPositions.splice(index, 1);
+                          setConfig(prev => ({
+                            ...prev,
+                            semanticPositions: newPositions
+                          }));
+                        }}
+                        color="error"
+                        size="small"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </Grid>
+                ))}
+                
+                <Grid size={12}>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      const newPositions = [...(config.semanticPositions || []), ''];
+                      setConfig(prev => ({
+                        ...prev,
+                        semanticPositions: newPositions
+                      }));
+                    }}
+                    variant="outlined"
+                  >
+                    Add Position
+                  </Button>
+                </Grid>
+
+                {(!config.semanticPositions || config.semanticPositions.length === 0) && (
+                  <Grid size={12}>
+                    <Alert severity="info">
+                      Add some common positions like "user1", "user2", "origin", "center" to get started.
+                    </Alert>
+                  </Grid>
+                )}
+              </Grid>
             </Grid>
 
             {/* Optional wiggle parameters */}
@@ -608,7 +699,7 @@ export default function RobotConfigWizard({
                 const isRelevant =
                   isRequired ||
                   (topicKey === 'rgbCamera' && config.capabilities.hasCamera) ||
-                  ((topicKey === 'cmdVel' || topicKey === 'odom') &&
+                  ((topicKey === 'cmdVel' || topicKey === 'odom' || topicKey === 'gotoPosition') &&
                     config.capabilities.hasMovement) ||
                   (topicKey === 'panic' && config.capabilities.hasPanic);
 

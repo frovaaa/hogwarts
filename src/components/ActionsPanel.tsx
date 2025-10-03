@@ -40,6 +40,7 @@ interface ActionsPanelProps {
   }) => void;
   onSessionChange?: (sessionId: string | null) => void;
   sectionVisibility?: SectionVisibility;
+  moveSpeed?: number;
 }
 
 // Enum for arm poses
@@ -61,14 +62,6 @@ export enum MacroScenario {
   PASS_PIECE_KID2 = 'pass_piece_kid2',
   ENCOURAGE_COLLAB = 'encourage_collab',
   PLAY_HAPPY_CHIME = 'play_happy_chime',
-}
-
-// Position interface and named positions
-export interface Position {
-  x: number;
-  y: number;
-  theta: number;
-  label: string;
 }
 
 // Interface for TF data
@@ -95,12 +88,6 @@ interface IntegratedPosition {
   timestamp: number;
 }
 
-export const Positions: Record<string, Position> = {
-  KID1: { x: 0.5, y: 0.5, theta: 0.0, label: 'kid1' },
-  KID2: { x: 0.5, y: -0.5, theta: 0.0, label: 'kid2' },
-  ORIGIN: { x: 0.0, y: 0.0, theta: 0.0, label: 'origin' },
-};
-
 export default function ActionsPanel({
   ros,
   manualIp,
@@ -108,6 +95,7 @@ export default function ActionsPanel({
   onActionResult,
   onSessionChange,
   sectionVisibility = {},
+  moveSpeed = 0.5,
 }: ActionsPanelProps) {
   const { robotConfig } = useRosContext();
 
@@ -449,24 +437,48 @@ export default function ActionsPanel({
   };
 
   // Movement functions
-  const moveToPosition = async (pos: Position) => {
-    if (!robotConfig.topics.moveRobotAction) {
-      console.warn('Robot does not support move robot action');
+  const moveToSemanticPosition = async (label: string, priority: number = 5) => {
+    if (!robotConfig.topics.gotoPosition) {
+      console.warn('Robot does not support semantic position navigation');
       return;
     }
-    const actionName = robotConfig.topics.moveRobotAction;
-    const actionType = 'robomaster_hri_msgs/action/MoveRobotWorldRef';
-    const goal = {
-      x: pos.x,
-      y: pos.y,
-      theta: pos.theta,
-      linear_speed: 1.5 * 0.5, // Default speed since we removed moveSpeed
-      angular_speed: 1.2,
-      robot_world_ref_frame_name: 'world',
-    };
-    console.log(`Initiating move to ${pos.label}...`);
-    onActionResult?.({ success: null, message: `Moving to ${pos.label}...` });
-    await callGenericAction(actionName, actionType, goal);
+    
+    if (!ros) {
+      console.error('ROS connection is not available');
+      return;
+    }
+    
+    const msg = new ROSLIB.Message({
+      data: JSON.stringify({
+        label: label,
+        priority: priority,
+        approach_speed: moveSpeed,
+        timestamp: Date.now()
+      })
+    });
+    
+    const positionPublisher = new ROSLIB.Topic({
+      ros,
+      name: robotConfig.topics.gotoPosition,
+      messageType: 'std_msgs/String',
+    });
+    
+    console.log(`Initiating move to semantic position: ${label}...`);
+    onActionResult?.({ success: null, message: `Moving to ${label}...` });
+    
+    // Log the movement event
+    logMovementEvent('semantic_goto', {
+      label: label,
+      priority: priority,
+      approach_speed: 0.5
+    });
+    
+    positionPublisher.publish(msg);
+    
+    // Simulate success for user feedback (actual success will come from bridge)
+    setTimeout(() => {
+      onActionResult?.({ success: true, message: `Reached ${label}` });
+    }, 2000);
   };
 
   // Arm control functions
@@ -705,12 +717,12 @@ export default function ActionsPanel({
         break;
       case MacroScenario.PASS_PIECE_KID1:
         await moveArmPose(ArmPose.CLOSE_BOX);
-        await moveToPosition(Positions.KID1);
+        await moveToSemanticPosition('user1');
         await moveArmPose(ArmPose.OPEN_BOX);
         break;
       case MacroScenario.PASS_PIECE_KID2:
         await moveArmPose(ArmPose.CLOSE_BOX);
-        await moveToPosition(Positions.KID2);
+        await moveToSemanticPosition('user2');
         await moveArmPose(ArmPose.OPEN_BOX);
         break;
       case MacroScenario.ENCOURAGE_COLLAB:
@@ -780,11 +792,12 @@ export default function ActionsPanel({
       )}
 
       {/* Movement Section */}
-      {showMovement && robotConfig.capabilities.hasMovement && (
-        <MovementControlPanel moveToPosition={moveToPosition} />
-      )}
-
-      {/* Panic Button Section */}
+        {showMovement && robotConfig.capabilities.hasMovement && (
+          <MovementControlPanel 
+            moveToSemanticPosition={moveToSemanticPosition}
+            availablePositions={robotConfig.semanticPositions || []}
+          />
+        )}      {/* Panic Button Section */}
       {showPanic && (
         <PanicControlPanel ros={ros} logSystemEvent={logSystemEvent} />
       )}
