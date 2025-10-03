@@ -437,7 +437,7 @@ export default function ActionsPanel({
   };
 
   // Movement functions
-  const moveToSemanticPosition = async (label: string, priority: number = 5) => {
+  const moveToSemanticPosition = async (label: string) => {
     if (!robotConfig.topics.gotoPosition) {
       console.warn('Robot does not support semantic position navigation');
       return;
@@ -451,7 +451,6 @@ export default function ActionsPanel({
     const msg = new ROSLIB.Message({
       data: JSON.stringify({
         label: label,
-        priority: priority,
         approach_speed: moveSpeed,
         timestamp: Date.now()
       })
@@ -469,8 +468,7 @@ export default function ActionsPanel({
     // Log the movement event
     logMovementEvent('semantic_goto', {
       label: label,
-      priority: priority,
-      approach_speed: 0.5
+      approach_speed: moveSpeed
     });
     
     positionPublisher.publish(msg);

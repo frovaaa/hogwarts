@@ -19,36 +19,58 @@ export default function PanicControlPanel({
     if (ros) {
       // Log the panic event
       logSystemEvent('panic_signal', {
-        repeat_count: 5,
-        interval_ms: 100,
+        immediate_stop: true,
+        timestamp: Date.now(),
       });
 
-      if (!robotConfig.topics.panic) {
-        console.warn('Robot does not support panic signal');
-        return;
-      }
-      console.log(
-        `Publishing panic signal to ${robotConfig.topics.panic} 5 times`
-      );
-      const panicPublisher = new ROSLIB.Topic({
-        ros,
-        name: robotConfig.topics.panic,
-        messageType: 'std_msgs/Empty',
-      });
+      console.log('PANIC: Publishing immediate stop and panic signal');
 
-      const msg = new ROSLIB.Message({});
-      let count = 0;
+      // 1. IMMEDIATE SAFETY: Send stop commands to cmd_vel
+      if (robotConfig.topics.cmdVel) {
+        const cmdVelTopic = new ROSLIB.Topic({
+          ros,
+          name: robotConfig.topics.cmdVel,
+          messageType: 'geometry_msgs/msg/Twist',
+        });
 
-      const interval = setInterval(() => {
-        if (count >= 5) {
-          clearInterval(interval);
-          console.log('Panic signal published 5 times.');
-          return;
+        const stopMsg = new ROSLIB.Message({
+          linear: { x: 0, y: 0, z: 0 },
+          angular: { x: 0, y: 0, z: 0 },
+        });
+
+        // Send stop commands repeatedly for immediate safety
+        for (let i = 0; i < 10; i++) {
+          setTimeout(() => cmdVelTopic.publish(stopMsg), i * 50);
         }
-        panicPublisher.publish(msg);
-        console.log(`Panic signal published (${count + 1}/5).`);
-        count++;
-      }, 100); // Publish every 100ms
+      }
+
+      // 2. SEMANTIC PANIC: Send panic message for custom robot logic (5 times for reliability)
+      if (robotConfig.topics.panic) {
+        const panicPublisher = new ROSLIB.Topic({
+          ros,
+          name: robotConfig.topics.panic,
+          messageType: 'std_msgs/String',
+        });
+
+        const panicMsg = new ROSLIB.Message({
+          data: JSON.stringify({
+            action: 'panic',
+            reason: 'user_initiated',
+            timestamp: Date.now(),
+            immediate_stop: true
+          })
+        });
+
+        // Send 5 panic messages with 100ms intervals for reliability
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => {
+            panicPublisher.publish(panicMsg);
+            console.log(`Panic signal sent to robot handler (${i + 1}/5)`);
+          }, i * 100);
+        }
+      } else {
+        console.warn('Robot does not support semantic panic signal');
+      }
     } else {
       console.error(
         'ROS connection is not available. Cannot publish panic signal.'

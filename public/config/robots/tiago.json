@@ -8,7 +8,8 @@
     "rgbCamera": "/head_front_camera/rgb/image_raw",
     "moveArmAction": "/arm_controller/joint_trajectory",
     "gripperAction": "/gripper_controller/joint_trajectory",
-    "gotoPosition": "/dashboard/goto_position"
+    "gotoPosition": "/dashboard/goto_position",
+    "panic": "/dashboard/panic"
   },
   "movementParams": {
     "maxLinearSpeed": 1.0,
@@ -27,7 +28,7 @@
     "hasArm": true,
     "hasLeds": false,
     "hasSound": false,
-    "hasPanic": false
+    "hasPanic": true
   },
   "semanticPositions": ["user1", "user2", "origin", "center"]
 }

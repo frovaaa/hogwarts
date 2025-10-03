@@ -89,6 +89,7 @@ export default function RobotConfigWizard({
       cmdVel: '',
       odom: '',
       gotoPosition: '/dashboard/goto_position',
+      panic: '/dashboard/panic',
     },
     movementParams: {
       maxLinearSpeed: 1.0,
@@ -124,6 +125,7 @@ export default function RobotConfigWizard({
           cmdVel: '',
           odom: '',
           gotoPosition: '/dashboard/goto_position',
+          panic: '/dashboard/panic',
         },
         movementParams: {
           maxLinearSpeed: 1.0,

@@ -3,7 +3,7 @@
 import { Box, Button, Typography, Divider, Stack, Chip } from '@mui/material';
 
 interface MovementControlPanelProps {
-  moveToSemanticPosition: (label: string, priority?: number) => Promise<void>;
+  moveToSemanticPosition: (label: string) => Promise<void>;
   availablePositions: string[];
 }
 
