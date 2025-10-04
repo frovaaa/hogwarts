@@ -64,12 +64,29 @@ const topicDescriptions = {
   rgbCamera: 'RGB camera image topic',
   moveRobotAction: 'Action server for robot navigation',
   moveArmAction: 'Action server for arm movement',
+  arm: 'Semantic arm control topic (JSON commands)',
   gripper: 'Gripper control topic (semantic JSON commands)',
   leds: 'LED control topic',
   sound: 'Sound command topic (semantic JSON commands)',
   panic: 'Emergency stop topic',
   externalPose: 'External pose tracking topic (e.g., OptiTrack)',
-  gotoPosition: 'Semantic position navigation topic',
+  gotoPosition: 'Semantic movement/position navigation topic (JSON commands)',
+};
+
+// User-friendly display names for topics
+const topicDisplayNames: Record<keyof typeof topicDescriptions, string> = {
+  cmdVel: 'Command Velocity',
+  odom: 'Odometry',
+  rgbCamera: 'RGB Camera',
+  moveRobotAction: 'Robot Navigation Action',
+  moveArmAction: 'Arm Movement Action',
+  arm: 'Arm Control',
+  gripper: 'Gripper Control',
+  leds: 'LED Control',
+  sound: 'Sound Control',
+  panic: 'Panic/Emergency Stop',
+  externalPose: 'External Pose Tracking',
+  gotoPosition: 'Movement Control',
 };
 
 export default function RobotConfigWizard({
@@ -88,10 +105,11 @@ export default function RobotConfigWizard({
     topics: {
       cmdVel: '',
       odom: '',
-      gotoPosition: '/dashboard/goto_position',
+      gotoPosition: '/dashboard/movement',
       panic: '/dashboard/panic',
       sound: '/dashboard/sound',
       gripper: '/dashboard/gripper',
+      arm: '/dashboard/arm',
     },
     movementParams: {
       maxLinearSpeed: 1.0,
@@ -104,6 +122,7 @@ export default function RobotConfigWizard({
       hasCamera: false,
       hasMovement: true,
       hasArm: false,
+      hasGripper: false,
       hasLeds: false,
       hasSound: false,
       hasPanic: false,
@@ -126,10 +145,11 @@ export default function RobotConfigWizard({
         topics: {
           cmdVel: '',
           odom: '',
-          gotoPosition: '/dashboard/goto_position',
+          gotoPosition: '/dashboard/movement',
           panic: '/dashboard/panic',
           sound: '/dashboard/sound',
           gripper: '/dashboard/gripper',
+          arm: '/dashboard/arm',
         },
         movementParams: {
           maxLinearSpeed: 1.0,
@@ -142,6 +162,7 @@ export default function RobotConfigWizard({
           hasCamera: false,
           hasMovement: true,
           hasArm: false,
+          hasGripper: false,
           hasLeds: false,
           hasSound: false,
           hasPanic: false,
@@ -264,7 +285,10 @@ export default function RobotConfigWizard({
     }
     if (config.capabilities.hasCamera) required.push('rgbCamera');
     if (config.capabilities.hasArm) {
-      required.push('moveArmAction', 'gripperAction');
+      required.push('moveArmAction', 'arm');
+    }
+    if (config.capabilities.hasGripper) {
+      required.push('gripper');
     }
     if (config.capabilities.hasLeds) required.push('leds');
     if (config.capabilities.hasSound) required.push('sound');
@@ -348,7 +372,7 @@ export default function RobotConfigWizard({
                           }
                         />
                       }
-                      label='Movement Control'
+                      label='Movement'
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -374,7 +398,20 @@ export default function RobotConfigWizard({
                           }
                         />
                       }
-                      label='Robotic Arm'
+                      label='Arm'
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={config.capabilities.hasGripper}
+                          onChange={(e) =>
+                            updateCapability('hasGripper', e.target.checked)
+                          }
+                        />
+                      }
+                      label='Gripper'
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
@@ -526,44 +563,173 @@ export default function RobotConfigWizard({
             </Grid>
 
             {/* Semantic Positions Section */}
-            <Grid size={12}>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant='h6' gutterBottom>
-                Semantic Positions
-              </Typography>
+            {config.capabilities.hasMovement && (
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant='h6' gutterBottom>
+                  Semantic Positions
+                </Typography>
+                <Typography variant='body2' color='text.secondary' paragraph>
+                  Define position labels that your robot can navigate to. These will appear as buttons in the Movement panel.
+                </Typography>
+
+                <Grid container spacing={2}>
+                  {(config.semanticPositions || []).map((position, index) => (
+                    <Grid size={{ xs: 12, md: 6 }} key={index}>
+                      <Box display='flex' alignItems='center' gap={1}>
+                        <TextField
+                          fullWidth
+                          label={`Position ${index + 1}`}
+                          value={position}
+                          onChange={(e) => {
+                            const newPositions = [...(config.semanticPositions || [])];
+                            newPositions[index] = e.target.value;
+                            setConfig(prev => ({
+                              ...prev,
+                              semanticPositions: newPositions
+                            }));
+                          }}
+                          placeholder="e.g., user1, storage, home"
+                        />
+                        <IconButton
+                          onClick={() => {
+                            const newPositions = [...(config.semanticPositions || [])];
+                            newPositions.splice(index, 1);
+                            setConfig(prev => ({
+                              ...prev,
+                              semanticPositions: newPositions
+                            }));
+                          }}
+                          color="error"
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </Grid>
+                  ))}
+
+                  <Grid size={12}>
+                    <Button
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        const newPositions = [...(config.semanticPositions || []), ''];
+                        setConfig(prev => ({
+                          ...prev,
+                          semanticPositions: newPositions
+                        }));
+                      }}
+                      variant="outlined"
+                    >
+                      Add Position
+                    </Button>
+                  </Grid>
+
+                  {(!config.semanticPositions || config.semanticPositions.length === 0) && (
+                    <Grid size={12}>
+                      <Alert severity="info">
+                        Add some common positions like "user1", "user2", "origin", "center" to get started.
+                      </Alert>
+                    </Grid>
+                  )}
+                </Grid>
+              </Grid>
+            )}
+            {config.capabilities.hasArm && (
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant='h6' gutterBottom>
+                  Semantic Arm Actions
+                </Typography>
+                <Typography variant='body2' color='text.secondary' paragraph>
+                  Define arm actions (strings) that will be published as JSON messages on the arm topic. These will appear as buttons in the Arm panel.
+                </Typography>
+
+                <Grid container spacing={2}>
+                  {(config.semanticArmActions || []).map((action, index) => (
+                    <Grid size={{ xs: 12, md: 6 }} key={`arm-${index}`}>
+                      <Box display='flex' alignItems='center' gap={1}>
+                        <TextField
+                          fullWidth
+                          label={`Arm action ${index + 1}`}
+                          value={action}
+                          onChange={(e) => {
+                            const newActions = [...(config.semanticArmActions || [])];
+                            newActions[index] = e.target.value;
+                            setConfig(prev => ({ ...prev, semanticArmActions: newActions }));
+                          }}
+                          placeholder='e.g., open_box, pick_up, wave'
+                        />
+                        <IconButton
+                          onClick={() => {
+                            const newActions = [...(config.semanticArmActions || [])];
+                            newActions.splice(index, 1);
+                            setConfig(prev => ({ ...prev, semanticArmActions: newActions }));
+                          }}
+                          color='error'
+                          size='small'
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </Grid>
+                  ))}
+
+                  <Grid size={12}>
+                    <Button
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        const newActions = [...(config.semanticArmActions || []), ''];
+                        setConfig(prev => ({ ...prev, semanticArmActions: newActions }));
+                      }}
+                      variant='outlined'
+                    >
+                      Add Arm Action
+                    </Button>
+                  </Grid>
+
+                  {(!config.semanticArmActions || config.semanticArmActions.length === 0) && (
+                    <Grid size={12}>
+                      <Alert severity='info'>Add arm actions like "open_box" or "pick_up" to get started.</Alert>
+                    </Grid>
+                  )}
+                </Grid>
+              </Grid>
+
+            )}
+            {config.capabilities.hasGripper && (
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant='h6' gutterBottom>
+                  Semantic Gripper Actions
+                </Typography>
               <Typography variant='body2' color='text.secondary' paragraph>
-                Define position labels that your robot can navigate to. These will appear as buttons in the Movement panel.
+                Define gripper actions (strings) that will be published as JSON messages on the gripper topic. These will appear as buttons in the Gripper section.
               </Typography>
 
               <Grid container spacing={2}>
-                {(config.semanticPositions || []).map((position, index) => (
-                  <Grid size={{ xs: 12, md: 6 }} key={index}>
+                {(config.semanticGripperActions || []).map((action, index) => (
+                  <Grid size={{ xs: 12, md: 6 }} key={`grip-${index}`}>
                     <Box display='flex' alignItems='center' gap={1}>
                       <TextField
                         fullWidth
-                        label={`Position ${index + 1}`}
-                        value={position}
+                        label={`Gripper action ${index + 1}`}
+                        value={action}
                         onChange={(e) => {
-                          const newPositions = [...(config.semanticPositions || [])];
-                          newPositions[index] = e.target.value;
-                          setConfig(prev => ({
-                            ...prev,
-                            semanticPositions: newPositions
-                          }));
+                          const newActions = [...(config.semanticGripperActions || [])];
+                          newActions[index] = e.target.value;
+                          setConfig(prev => ({ ...prev, semanticGripperActions: newActions }));
                         }}
-                        placeholder="e.g., user1, storage, home"
+                        placeholder='e.g., open, close, hold'
                       />
                       <IconButton
                         onClick={() => {
-                          const newPositions = [...(config.semanticPositions || [])];
-                          newPositions.splice(index, 1);
-                          setConfig(prev => ({
-                            ...prev,
-                            semanticPositions: newPositions
-                          }));
+                          const newActions = [...(config.semanticGripperActions || [])];
+                          newActions.splice(index, 1);
+                          setConfig(prev => ({ ...prev, semanticGripperActions: newActions }));
                         }}
-                        color="error"
-                        size="small"
+                        color='error'
+                        size='small'
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -575,28 +741,23 @@ export default function RobotConfigWizard({
                   <Button
                     startIcon={<AddIcon />}
                     onClick={() => {
-                      const newPositions = [...(config.semanticPositions || []), ''];
-                      setConfig(prev => ({
-                        ...prev,
-                        semanticPositions: newPositions
-                      }));
+                      const newActions = [...(config.semanticGripperActions || []), ''];
+                      setConfig(prev => ({ ...prev, semanticGripperActions: newActions }));
                     }}
-                    variant="outlined"
+                    variant='outlined'
                   >
-                    Add Position
+                    Add Gripper Action
                   </Button>
                 </Grid>
 
-                {(!config.semanticPositions || config.semanticPositions.length === 0) && (
+                {(!config.semanticGripperActions || config.semanticGripperActions.length === 0) && (
                   <Grid size={12}>
-                    <Alert severity="info">
-                      Add some common positions like "user1", "user2", "origin", "center" to get started.
-                    </Alert>
+                    <Alert severity='info'>Add gripper actions like "open" and "close" to get started.</Alert>
                   </Grid>
                 )}
               </Grid>
-            </Grid>
-
+              </Grid>
+            )}
             {/* Optional wiggle parameters */}
             <Grid size={12}>
               <Accordion>
@@ -669,8 +830,10 @@ export default function RobotConfigWizard({
                 </AccordionDetails>
               </Accordion>
             </Grid>
+
           </Grid>
         );
+
 
       case 3: // Topic Configuration
         const requiredTopics = getRequiredTopics();
@@ -709,7 +872,8 @@ export default function RobotConfigWizard({
                     config.capabilities.hasMovement) ||
                   (topicKey === 'panic' && config.capabilities.hasPanic) ||
                   (topicKey === 'sound' && config.capabilities.hasSound) ||
-                  (topicKey === 'gripper' && config.capabilities.hasArm);
+                  (topicKey === 'arm' && config.capabilities.hasArm) ||
+                  (topicKey === 'gripper' && config.capabilities.hasGripper);
 
                 if (!isRelevant) return null;
 
@@ -728,7 +892,7 @@ export default function RobotConfigWizard({
                       renderInput={(params) => (
                         <TextField
                           {...params}
-                          label={`${topicKey}${isRequired ? ' *' : ''}`}
+                          label={`${topicDisplayNames[topicKey] || topicKey}${isRequired ? ' *' : ''}`}
                           helperText={topicDescriptions[topicKey]}
                           required={isRequired}
                         />

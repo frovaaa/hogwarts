@@ -11,9 +11,10 @@
     "leds": "/robomaster/leds/color",
     "sound": "/dashboard/sound",
     "gripper": "/dashboard/gripper",
+    "arm": "/dashboard/arm",
     "panic": "/robomaster/panic",
     "externalPose": "/optitrack/robomaster_frova",
-    "gotoPosition": "/dashboard/goto_position"
+    "gotoPosition": "/dashboard/movement"
   },
   "movementParams": {
     "maxLinearSpeed": 3.5,
@@ -30,9 +31,12 @@
     "hasCamera": true,
     "hasMovement": true,
     "hasArm": true,
+    "hasGripper": true,
     "hasLeds": true,
     "hasSound": true,
     "hasPanic": true
   },
-  "semanticPositions": ["user1", "user2", "origin", "center"]
+  "semanticPositions": ["user1", "user2", "origin", "center"],
+    "semanticArmActions": ["open_box", "close_box", "wave"],
+  "semanticGripperActions": ["open", "close", "gentle_close"]
 }

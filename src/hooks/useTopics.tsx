@@ -173,7 +173,7 @@ export function useTopicSuggestions(
       const suggestions: string[] = [];
 
       // Define common patterns for different topic types
-      const patterns: Record<string, string[]> = {
+        const patterns: Record<string, string[]> = {
         cmdVel: ['cmd_vel', 'velocity', 'command'],
         odom: ['odom', 'odometry'],
         rgbCamera: ['rgb', 'image', 'color', 'camera'],
@@ -185,7 +185,8 @@ export function useTopicSuggestions(
         jointStates: ['joint_states', 'joints'],
         moveRobotAction: ['move', 'navigate', 'goal'],
         moveArmAction: ['arm', 'manipulator', 'trajectory'],
-        gripperAction: ['gripper', 'grasp'],
+        arm: ['arm', 'manipulator', 'ee', 'end_effector'],
+        gripper: ['gripper', 'grasp'],
         leds: ['led', 'light'],
         sound: ['sound', 'audio', 'beep'],
         panic: ['panic', 'stop', 'emergency'],

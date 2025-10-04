@@ -450,7 +450,7 @@ export default function ActionsPanel({
     
     const msg = new ROSLIB.Message({
       data: JSON.stringify({
-        label: label,
+        motion_name: label,
         approach_speed: moveSpeed,
         timestamp: Date.now()
       })
@@ -494,7 +494,7 @@ export default function ActionsPanel({
 
   // Gripper control functions
   const handleSemanticGripper = async (action: string, force: number = gripperPower) => {
-    if (!robotConfig.capabilities.hasArm || !robotConfig.topics.gripper) {
+    if (!robotConfig.capabilities.hasGripper || !robotConfig.topics.gripper) {
       console.warn('Robot does not support gripper control');
       return;
     }
@@ -525,6 +525,41 @@ export default function ActionsPanel({
     });
     
     gripperPublisher.publish(msg);
+  };
+
+  // Generic semantic arm actions (configurable list)
+  const handleSemanticArmAction = async (actionName: string, params: Record<string, unknown> = {}) => {
+    if (!robotConfig.capabilities.hasArm) {
+      console.warn('Robot does not support arm actions');
+      return;
+    }
+
+    if (!ros) {
+      console.error('ROS connection is not available');
+      return;
+    }
+
+    // Publish semantic arm action as std_msgs/String JSON (same pattern as movement)
+    const msg = new ROSLIB.Message({
+      data: JSON.stringify({
+        action: actionName,
+        params: params,
+        timestamp: Date.now(),
+      }),
+    });
+
+    const armTopicName = robotConfig.topics.arm || robotConfig.topics.moveArmAction || '/dashboard/arm';
+
+    const armPublisher = new ROSLIB.Topic({
+      ros,
+      name: armTopicName,
+      messageType: 'std_msgs/String',
+    });
+
+    console.log(`Semantic arm command sent: ${actionName}`);
+    logArmEvent('semantic_arm', { action: actionName, params });
+
+    armPublisher.publish(msg);
   };
 
   // Feedback functions
@@ -794,6 +829,9 @@ export default function ActionsPanel({
         <RobotArmPanel
           onArmPose={moveArmPose}
           onSemanticGripper={handleSemanticGripper}
+          onSemanticArmAction={handleSemanticArmAction}
+          availableArmActions={robotConfig.semanticArmActions || ['open_box','close_box']}
+          availableGripperActions={robotConfig.semanticGripperActions || ['open','close']}
           showGripper={showGripper}
           showArm={showArm}
         />

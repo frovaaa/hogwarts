@@ -9,13 +9,15 @@ export interface RobotTopicConfig {
   // Action server topics (for robot-specific actions)
   moveRobotAction?: string;
   moveArmAction?: string;
-  gripperAction?: string;
 
+  // Semantic/Generic action topics (publish std_msgs/String JSON commands)
   // Robot-specific topics
   leds?: string;
   sound?: string;
   panic?: string;
   gripper?: string;
+  // Semantic arm topic (publish JSON string commands like movement)
+  arm?: string;
 
   // External tracking (OptiTrack, etc.)
   externalPose?: string;
@@ -23,6 +25,7 @@ export interface RobotTopicConfig {
   // Semantic command topics
   gotoPosition?: string;
 }
+
 
 export interface RobotMovementParams {
   maxLinearSpeed: number; // m/s
@@ -46,11 +49,15 @@ export interface RobotConfig {
     hasCamera: boolean;
     hasMovement: boolean;
     hasArm: boolean;
+    hasGripper: boolean;
     hasLeds: boolean;
     hasSound: boolean;
     hasPanic: boolean;
   };
   semanticPositions?: string[];
+  // Optional lists to define semantic arm and gripper actions shown in UI
+  semanticArmActions?: string[];
+  semanticGripperActions?: string[];
 }
 
 // Robot configurations cache
@@ -264,6 +271,9 @@ export const getDefaultRobotConfig = (): RobotConfig => {
     topics: {
       cmdVel: '/cmd_vel',
       odom: '/odom',
+      gotoPosition: '/dashboard/movement',
+      gripper: '/dashboard/gripper',
+      arm: '/dashboard/arm',
     },
     movementParams: {
       maxLinearSpeed: 1.0,
@@ -276,6 +286,7 @@ export const getDefaultRobotConfig = (): RobotConfig => {
       hasCamera: false,
       hasMovement: true,
       hasArm: false,
+      hasGripper: false,
       hasLeds: false,
       hasSound: false,
       hasPanic: false,

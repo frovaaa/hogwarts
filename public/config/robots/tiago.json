@@ -9,7 +9,8 @@
     "moveArmAction": "/arm_controller/joint_trajectory",
     "gripper": "/dashboard/gripper",
     "sound": "/dashboard/sound",
-    "gotoPosition": "/dashboard/goto_position",
+    "arm": "/dashboard/arm",
+    "gotoPosition": "/dashboard/movement",
     "panic": "/dashboard/panic"
   },
   "movementParams": {
@@ -27,9 +28,23 @@
     "hasCamera": true,
     "hasMovement": true,
     "hasArm": true,
+    "hasGripper": true,
     "hasLeds": false,
     "hasSound": false,
     "hasPanic": true
   },
-  "semanticPositions": ["user1", "user2", "origin", "center"]
+  "semanticPositions": [
+    "user1",
+    "user2",
+    "origin",
+    "center"
+  ],
+  "semanticArmActions": [
+    "open_box",
+    "close_box"
+  ],
+  "semanticGripperActions": [
+    "open",
+    "close"
+  ]
 }
