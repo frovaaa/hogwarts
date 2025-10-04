@@ -53,11 +53,14 @@ export interface RobotConfig {
     hasLeds: boolean;
     hasSound: boolean;
     hasPanic: boolean;
+    hasRecording: boolean;
   };
   semanticPositions?: string[];
   // Optional lists to define semantic arm and gripper actions shown in UI
   semanticArmActions?: string[];
   semanticGripperActions?: string[];
+  // Topics to record when experiment recording is enabled
+  recordingTopics?: string[];
 }
 
 // Robot configurations cache
@@ -290,6 +293,7 @@ export const getDefaultRobotConfig = (): RobotConfig => {
       hasLeds: false,
       hasSound: false,
       hasPanic: false,
+      hasRecording: false,
     },
   };
 };

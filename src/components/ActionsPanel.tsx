@@ -1,6 +1,6 @@
 'use client';
 
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import ROSLIB from 'roslib';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useExperimentLogger } from '@/hooks/useExperimentLogger';
@@ -810,13 +810,23 @@ export default function ActionsPanel({
       )}
 
       {/* Experiment Control Section */}
-      {showExperimentControl && (
+      {showExperimentControl && robotConfig?.capabilities?.hasRecording && (
         <ExperimentControlPanel
           manualIp={manualIp}
           onSessionChange={handleSessionChange}
           exportLogsAsJsonl={exportLogsAsJsonl}
           saveAllLogsToServer={saveAllLogsToServer}
+          robotConfig={robotConfig}
         />
+      )}
+
+      {/* Show message when recording is requested but not available */}
+      {showExperimentControl && !robotConfig?.capabilities?.hasRecording && (
+        <Box p={2}>
+          <Typography variant="body2" color="text.secondary" align="center">
+            Recording capability not available for {robotConfig?.displayName || 'this robot'}
+          </Typography>
+        </Box>
       )}
 
       {/* LEDs Section */}

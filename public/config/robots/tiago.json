@@ -31,20 +31,39 @@
     "hasGripper": true,
     "hasLeds": false,
     "hasSound": false,
-    "hasPanic": true
+    "hasPanic": true,
+    "hasRecording": true
   },
   "semanticPositions": [
-    "user1",
-    "user2",
-    "origin",
-    "center"
+    "home",
+    "reach_max",
+    "pregrasp_weight"
   ],
   "semanticArmActions": [
-    "open_box",
-    "close_box"
+    "shake_hands",
+    "do_weights",
+    "wave"
   ],
   "semanticGripperActions": [
     "open",
     "close"
+  ],
+  "recordingTopics": [
+    "/mobile_base_controller/cmd_vel_unstamped",
+    "/mobile_base_controller/odom",
+    "/head_front_camera/rgb/image_raw",
+    "/arm_controller/joint_trajectory",
+    "/gripper_controller/command",
+    "/joint_states",
+    "/tf",
+    "/tf_static",
+    "/rosout",
+    "/experiment/event",
+    "/dashboard/movement",
+    "/dashboard/arm",
+    "/dashboard/gripper",
+    "/dashboard/sound",
+    "/dashboard/panic",
+    "/play_motion2"
   ]
 }

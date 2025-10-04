@@ -34,9 +34,44 @@
     "hasGripper": true,
     "hasLeds": true,
     "hasSound": true,
-    "hasPanic": true
+    "hasPanic": true,
+    "hasRecording": true
   },
-  "semanticPositions": ["user1", "user2", "origin", "center"],
-    "semanticArmActions": ["open_box", "close_box", "wave"],
-  "semanticGripperActions": ["open", "close", "gentle_close"]
+  "semanticPositions": [
+    "user1",
+    "user2",
+    "origin",
+    "center"
+  ],
+  "semanticArmActions": [
+    "open_box",
+    "close_box",
+    "wave"
+  ],
+  "semanticGripperActions": [
+    "open",
+    "close",
+    "gentle_close"
+  ],
+  "recordingTopics": [
+    "/robomaster/cmd_vel",
+    "/robomaster/cmd_wheels",
+    "/robomaster/cmd_arm",
+    "/robomaster/mov_arm_pose",
+    "/robomaster/gripper",
+    "/robomaster/leds/color",
+    "/robomaster/leds/effect",
+    "/robomaster/cmd_sound",
+    "/robomaster/panic",
+    "/robomaster/state",
+    "/robomaster/odom",
+    "/robomaster/joint_states",
+    "/robomaster/imu",
+    "/robomaster/battery",
+    "/robomaster/pose_world_ref",
+    "/tf",
+    "/tf_static",
+    "/rosout",
+    "/experiment/event"
+  ]
 }

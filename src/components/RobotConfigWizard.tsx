@@ -126,8 +126,10 @@ export default function RobotConfigWizard({
       hasLeds: false,
       hasSound: false,
       hasPanic: false,
+      hasRecording: false,
     },
     semanticPositions: [],
+    recordingTopics: [],
   });
 
   const [errors, setErrors] = useState<string[]>([]);
@@ -166,8 +168,10 @@ export default function RobotConfigWizard({
           hasLeds: false,
           hasSound: false,
           hasPanic: false,
+          hasRecording: false,
         },
         semanticPositions: [],
+        recordingTopics: [],
       });
     }
   }, [editConfig, open]);
@@ -451,6 +455,19 @@ export default function RobotConfigWizard({
                         />
                       }
                       label='Panic Button'
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={config.capabilities.hasRecording}
+                          onChange={(e) =>
+                            updateCapability('hasRecording', e.target.checked)
+                          }
+                        />
+                      }
+                      label='Experiment Recording'
                     />
                   </Grid>
                 </Grid>
@@ -756,6 +773,70 @@ export default function RobotConfigWizard({
                   </Grid>
                 )}
               </Grid>
+              </Grid>
+            )}
+            {/* Recording Topics Section */}
+            {config.capabilities.hasRecording && (
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant='h6' gutterBottom>
+                  Recording Topics
+                </Typography>
+                <Typography variant='body2' color='text.secondary' paragraph>
+                  Define which ROS topics to record during experiments. Common topics include odometry, command velocities, sensor data, and experiment events.
+                </Typography>
+
+                <Grid container spacing={2}>
+                  {(config.recordingTopics || []).map((topic, index) => (
+                    <Grid size={{ xs: 12, md: 6 }} key={`topic-${index}`}>
+                      <Box display='flex' alignItems='center' gap={1}>
+                        <TextField
+                          fullWidth
+                          label={`Topic ${index + 1}`}
+                          value={topic}
+                          onChange={(e) => {
+                            const newTopics = [...(config.recordingTopics || [])];
+                            newTopics[index] = e.target.value;
+                            setConfig(prev => ({ ...prev, recordingTopics: newTopics }));
+                          }}
+                          placeholder='e.g., /robot/odom, /cmd_vel, /experiment/event'
+                        />
+                        <IconButton
+                          onClick={() => {
+                            const newTopics = [...(config.recordingTopics || [])];
+                            newTopics.splice(index, 1);
+                            setConfig(prev => ({ ...prev, recordingTopics: newTopics }));
+                          }}
+                          color='error'
+                          size='small'
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </Grid>
+                  ))}
+
+                  <Grid size={12}>
+                    <Button
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        const newTopics = [...(config.recordingTopics || []), ''];
+                        setConfig(prev => ({ ...prev, recordingTopics: newTopics }));
+                      }}
+                      variant='outlined'
+                    >
+                      Add Recording Topic
+                    </Button>
+                  </Grid>
+
+                  {(!config.recordingTopics || config.recordingTopics.length === 0) && (
+                    <Grid size={12}>
+                      <Alert severity='info'>
+                        Add topics like "/robot/odom", "/cmd_vel", "/experiment/event", "/tf" to get started. These will be recorded during experiments.
+                      </Alert>
+                    </Grid>
+                  )}
+                </Grid>
               </Grid>
             )}
             {/* Optional wiggle parameters */}

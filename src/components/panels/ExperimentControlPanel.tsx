@@ -25,6 +25,7 @@ interface ExperimentControlProps {
   onSessionChange?: (sessionId: string | null) => void;
   exportLogsAsJsonl?: () => string;
   saveAllLogsToServer?: () => Promise<boolean>;
+  robotConfig?: any; // Robot configuration for recording topics
 }
 
 interface BagStatus {
@@ -46,6 +47,7 @@ export default function ExperimentControl({
   onSessionChange,
   exportLogsAsJsonl,
   saveAllLogsToServer,
+  robotConfig,
 }: ExperimentControlProps) {
   const [sessionName, setSessionName] = useState('');
   const [currentSession, setCurrentSession] = useState<string | null>(null);
@@ -146,6 +148,7 @@ export default function ExperimentControl({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionName: sessionName.trim(),
+          topics: robotConfig?.recordingTopics || [], // Use robot-specific recording topics
         }),
       });
 
