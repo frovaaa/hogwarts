@@ -9,6 +9,7 @@
     "moveArmAction": "/arm_controller/joint_trajectory",
     "gripper": "/dashboard/gripper",
     "sound": "/dashboard/sound",
+    "leds": "/dashboard/leds",
     "arm": "/dashboard/arm",
     "gotoPosition": "/dashboard/movement",
     "panic": "/dashboard/panic"
@@ -48,6 +49,7 @@
     "open",
     "close"
   ],
+  "semanticLedActions": [],
   "recordingTopics": [
     "/mobile_base_controller/cmd_vel_unstamped",
     "/mobile_base_controller/odom",
@@ -63,6 +65,7 @@
     "/dashboard/arm",
     "/dashboard/gripper",
     "/dashboard/sound",
+    "/dashboard/leds",
     "/dashboard/panic",
     "/play_motion2"
   ]

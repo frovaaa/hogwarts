@@ -8,7 +8,7 @@
     "rgbCamera": "/robomaster/camera/image_color",
     "moveRobotAction": "/robomaster/move_robot_world_ref",
     "moveArmAction": "/robomaster/move_arm_pose",
-    "leds": "/robomaster/leds/color",
+    "leds": "/dashboard/leds",
     "sound": "/dashboard/sound",
     "gripper": "/dashboard/gripper",
     "arm": "/dashboard/arm",
@@ -53,14 +53,19 @@
     "close",
     "gentle_close"
   ],
+  "semanticLedActions": [
+    "rainbow",
+    "flash",
+    "pulse",
+    "disco"
+  ],
   "recordingTopics": [
     "/robomaster/cmd_vel",
     "/robomaster/cmd_wheels",
     "/robomaster/cmd_arm",
     "/robomaster/mov_arm_pose",
     "/robomaster/gripper",
-    "/robomaster/leds/color",
-    "/robomaster/leds/effect",
+    "/dashboard/leds",
     "/robomaster/cmd_sound",
     "/robomaster/panic",
     "/robomaster/state",
@@ -72,6 +77,11 @@
     "/tf",
     "/tf_static",
     "/rosout",
-    "/experiment/event"
+    "/experiment/event",
+    "/dashboard/movement",
+    "/dashboard/arm",
+    "/dashboard/gripper",
+    "/dashboard/sound",
+    "/dashboard/leds"
   ]
 }

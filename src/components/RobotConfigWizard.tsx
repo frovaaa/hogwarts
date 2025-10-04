@@ -775,6 +775,68 @@ export default function RobotConfigWizard({
               </Grid>
               </Grid>
             )}
+            {/* Semantic LED Actions */}
+            {config.capabilities.hasLeds && (
+              <Grid size={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant='h6' gutterBottom>
+                  Semantic LED Actions
+                </Typography>
+                <Typography variant='body2' color='text.secondary' paragraph>
+                  Define LED actions (strings) that will be published as JSON messages on the LED topic. These will appear as buttons in the LED panel.
+                </Typography>
+
+                <Grid container spacing={2}>
+                  {(config.semanticLedActions || []).map((action, index) => (
+                    <Grid size={{ xs: 12, md: 6 }} key={`led-${index}`}>
+                      <Box display='flex' alignItems='center' gap={1}>
+                        <TextField
+                          fullWidth
+                          label={`LED action ${index + 1}`}
+                          value={action}
+                          onChange={(e) => {
+                            const newActions = [...(config.semanticLedActions || [])];
+                            newActions[index] = e.target.value;
+                            setConfig(prev => ({ ...prev, semanticLedActions: newActions }));
+                          }}
+                          placeholder='e.g., rainbow, flash, pulse, disco'
+                        />
+                        <IconButton
+                          onClick={() => {
+                            const newActions = [...(config.semanticLedActions || [])];
+                            newActions.splice(index, 1);
+                            setConfig(prev => ({ ...prev, semanticLedActions: newActions }));
+                          }}
+                          color='error'
+                          size='small'
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </Grid>
+                  ))}
+
+                  <Grid size={12}>
+                    <Button
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        const newActions = [...(config.semanticLedActions || []), ''];
+                        setConfig(prev => ({ ...prev, semanticLedActions: newActions }));
+                      }}
+                      variant='outlined'
+                    >
+                      Add LED Action
+                    </Button>
+                  </Grid>
+
+                  {(!config.semanticLedActions || config.semanticLedActions.length === 0) && (
+                    <Grid size={12}>
+                      <Alert severity='info'>Add LED actions like "rainbow", "flash", "pulse" to get started.</Alert>
+                    </Grid>
+                  )}
+                </Grid>
+              </Grid>
+            )}
             {/* Recording Topics Section */}
             {config.capabilities.hasRecording && (
               <Grid size={12}>

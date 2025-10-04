@@ -59,6 +59,7 @@ export interface RobotConfig {
   // Optional lists to define semantic arm and gripper actions shown in UI
   semanticArmActions?: string[];
   semanticGripperActions?: string[];
+  semanticLedActions?: string[];
   // Topics to record when experiment recording is enabled
   recordingTopics?: string[];
 }

@@ -19,50 +19,61 @@ export default function LEDControlPanel({
   const [ledBlinkTimes, setLedBlinkTimes] = useState(5);
   const [ledBlinkSpeed, setLedBlinkSpeed] = useState(100);
 
+  // Semantic LED control function (like arm, gripper, movement)
+  const handleSemanticLedAction = (action: string, params: Record<string, unknown> = {}) => {
+    if (!robotConfig.capabilities.hasLeds || !robotConfig.topics.leds) {
+      console.warn('Robot does not support LEDs');
+      return;
+    }
+
+    if (!ros) {
+      console.error('ROS connection is not available. Cannot control LEDs.');
+      return;
+    }
+
+    const msg = new ROSLIB.Message({
+      data: JSON.stringify({
+        action: action,
+        params: params,
+        timestamp: Date.now(),
+      }),
+    });
+
+    const ledTopic = new ROSLIB.Topic({
+      ros,
+      name: robotConfig.topics.leds,
+      messageType: 'std_msgs/String',
+    });
+
+    ledTopic.publish(msg);
+    console.log(`Semantic LED command sent: ${action}`, params);
+
+    // Log the event
+    logLedEvent('semantic_led', {
+      action: action,
+      params: params,
+    });
+  };
+
+  // Use semantic LED actions for colors
   const publishLedColor = (
     r: number,
     g: number,
     b: number,
     intensity: number = 1.0
   ) => {
-    if (ros) {
-      // Scale RGB by intensity, alpha always 1.0
-      const scaledR = r * intensity;
-      const scaledG = g * intensity;
-      const scaledB = b * intensity;
-      const msg = new ROSLIB.Message({
-        r: scaledR,
-        g: scaledG,
-        b: scaledB,
-        a: 1.0,
-      });
-      if (!robotConfig.capabilities.hasLeds || !robotConfig.topics.leds) {
-        console.warn('Robot does not support LEDs');
-        return;
-      }
-      const ledColorPublisher = new ROSLIB.Topic({
-        ros,
-        name: robotConfig.topics.leds,
-        messageType: 'std_msgs/ColorRGBA',
-      });
-      ledColorPublisher.publish(msg);
-      console.log(
-        `Publishing LED color: r=${scaledR}, g=${scaledG}, b=${scaledB}, a=1.0`
-      );
+    const colorName = getColorName(r, g, b);
+    const scaledR = r * intensity;
+    const scaledG = g * intensity;
+    const scaledB = b * intensity;
 
-      // Log the event
-      logLedEvent('set_color', {
-        r: scaledR,
-        g: scaledG,
-        b: scaledB,
-        intensity: intensity,
-        color_name: getColorName(r, g, b),
-      });
-    } else {
-      console.error(
-        'ROS connection is not available. Cannot publish LED color.'
-      );
-    }
+    handleSemanticLedAction('set_color', {
+      color: colorName,
+      r: scaledR,
+      g: scaledG,
+      b: scaledB,
+      intensity: intensity,
+    });
   };
 
   // Helper function to get color name for logging
@@ -83,47 +94,12 @@ export default function LEDControlPanel({
     times: number = 5,
     speed: number = 100
   ) => {
-    // Log the LED feedback event
-    logLedEvent('feedback_blink', {
+    handleSemanticLedAction('feedback_blink', {
       behavior: behavior,
       times: times,
       speed: speed,
       intensity: ledIntensity,
     });
-
-    const blinkLed = (
-      r: number,
-      g: number,
-      b: number,
-      times: number,
-      speed: number
-    ) => {
-      let count = 0;
-      const interval = setInterval(() => {
-        if (count >= times * 2) {
-          clearInterval(interval);
-          return;
-        }
-        if (count % 2 === 0) {
-          publishLedColor(r, g, b, ledIntensity); // Turn on with intensity
-        } else {
-          publishLedColor(0.0, 0.0, 0.0, 0.0); // Turn off
-        }
-        count++;
-      }, speed);
-    };
-
-    if (behavior === 'good') {
-      console.log(
-        `Marking good behavior with ${times} blinks at ${speed}ms speed...`
-      );
-      blinkLed(0.0, 1.0, 0.0, times, speed); // Green LED blinks specified times
-    } else if (behavior === 'bad') {
-      console.log(
-        `Marking bad behavior with ${times} blinks at ${speed}ms speed...`
-      );
-      blinkLed(1.0, 0.0, 0.0, times, speed); // Red LED blinks specified times
-    }
   };
 
   return (
@@ -131,6 +107,21 @@ export default function LEDControlPanel({
       <Typography variant='h6'>LEDs</Typography>
       <Divider sx={{ mb: 1 }} />
       <Stack spacing={1}>
+        {/* Semantic LED Actions from Config */}
+        {robotConfig.semanticLedActions && robotConfig.semanticLedActions.length > 0 && (
+          <>
+            {robotConfig.semanticLedActions.map((action: string, index: number) => (
+              <Button
+                key={`semantic-led-${index}`}
+                variant='contained'
+                onClick={() => handleSemanticLedAction(action)}
+              >
+                {action}
+              </Button>
+            ))}
+            <Divider sx={{ my: 1 }} />
+          </>
+        )}
         <Button
           variant='outlined'
           onClick={() => publishLedColor(1, 0, 0, ledIntensity)}
