@@ -279,8 +279,6 @@ export const useExperimentLogger = (
           'ROS connection not available. Cannot log experiment event to topic.'
         );
       }
-
-      console.log('Experiment event logged:', experimentEvent);
     },
     [ros, sessionId]
   );
