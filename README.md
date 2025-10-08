@@ -2,6 +2,12 @@
 
 A comprehensive Wizard-of-Oz (WoZ) platform designed for operating social robots in highly unpredictable environments like classrooms, supporting the creation and evaluation of innovative child-robot interactions. This system addresses challenges related to safety, robustness, and managing multiple, often noisy, interactions while providing an intuitive interface for non-expert users like teachers.
 
+## Demo Video
+
+https://github.com/user-attachments/assets/c63809aa-10a5-44af-a7c6-9bd206bb1618
+
+Watch our demonstration of the Wizard-of-Oz platform in action, showcasing the dashboard interface with the TIAGo robot and demonstrating how to configure a new robot.
+
 ## Overview
 
 This platform enables rich user data elicitation and contextual inquiry, both essential for understanding user needs and deriving meaningful requirements in Human-Robot Interaction (HRI) research. By prioritizing usability, modularity, and robustness, our approach facilitates iterative design, accelerates the transition from Wizard-of-Oz prototyping to autonomous behaviors, and contributes to making child-robot interaction technologies more accessible and practical for diverse application domains.
