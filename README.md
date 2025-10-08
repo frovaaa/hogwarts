@@ -70,7 +70,7 @@ ros2 launch rosbridge_server rosbridge_websocket_launch.xml
 
 2. **Start the Node.js ROS Bridge**:
 ```bash
-node ros-server/index.js
+node dashboard-bridge/index.js
 ```
 
 3. **Start the web interface**:
