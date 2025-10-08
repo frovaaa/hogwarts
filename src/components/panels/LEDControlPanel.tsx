@@ -7,6 +7,7 @@ import { useRosContext } from '../../hooks/useRosContext';
 
 interface LEDControlPanelProps {
   ros: ROSLIB.Ros | null;
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   logLedEvent: (eventType: string, data: any) => void;
 }
 

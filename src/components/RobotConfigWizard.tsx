@@ -497,7 +497,7 @@ export default function RobotConfigWizard({
                 Movement Parameters
               </Typography>
               <Typography variant='body2' color='text.secondary' paragraph>
-                Configure the robot's movement limits, behavior parameters, and semantic positions.
+                Configure the robot&apos;s movement limits, behavior parameters, and semantic positions.
               </Typography>
             </Grid>
 
@@ -645,7 +645,7 @@ export default function RobotConfigWizard({
                   {(!config.semanticPositions || config.semanticPositions.length === 0) && (
                     <Grid size={12}>
                       <Alert severity="info">
-                        Add some common positions like "user1", "user2", "origin", "center" to get started.
+                        Add some common positions like &quot;user1&quot;, &quot;user2&quot;, &quot;origin&quot;, &quot;center&quot; to get started.
                       </Alert>
                     </Grid>
                   )}
@@ -707,7 +707,7 @@ export default function RobotConfigWizard({
 
                   {(!config.semanticArmActions || config.semanticArmActions.length === 0) && (
                     <Grid size={12}>
-                      <Alert severity='info'>Add arm actions like "open_box" or "pick_up" to get started.</Alert>
+                      <Alert severity='info'>Add arm actions like &quot;open_box&quot; or &quot;pick_up&quot; to get started.</Alert>
                     </Grid>
                   )}
                 </Grid>
@@ -769,7 +769,7 @@ export default function RobotConfigWizard({
 
                 {(!config.semanticGripperActions || config.semanticGripperActions.length === 0) && (
                   <Grid size={12}>
-                    <Alert severity='info'>Add gripper actions like "open" and "close" to get started.</Alert>
+                    <Alert severity='info'>Add gripper actions like &quot;open&quot; and &quot;close&quot; to get started.</Alert>
                   </Grid>
                 )}
               </Grid>
@@ -831,7 +831,7 @@ export default function RobotConfigWizard({
 
                   {(!config.semanticLedActions || config.semanticLedActions.length === 0) && (
                     <Grid size={12}>
-                      <Alert severity='info'>Add LED actions like "rainbow", "flash", "pulse" to get started.</Alert>
+                      <Alert severity='info'>Add LED actions like &quot;rainbow&quot;, &quot;flash&quot;, &quot;pulse&quot; to get started.</Alert>
                     </Grid>
                   )}
                 </Grid>
@@ -894,7 +894,7 @@ export default function RobotConfigWizard({
                   {(!config.recordingTopics || config.recordingTopics.length === 0) && (
                     <Grid size={12}>
                       <Alert severity='info'>
-                        Add topics like "/robot/odom", "/cmd_vel", "/experiment/event", "/tf" to get started. These will be recorded during experiments.
+                        Add topics like &quot;/robot/odom&quot;, &quot;/cmd_vel&quot;, &quot;/experiment/event&quot;, &quot;/tf&quot; to get started. These will be recorded during experiments.
                       </Alert>
                     </Grid>
                   )}
@@ -999,7 +999,7 @@ export default function RobotConfigWizard({
             </Box>
 
             <Typography variant='body2' color='text.secondary' paragraph>
-              Map your robot's ROS topics. Required topics are marked with *,
+              Map your robot&apos;s ROS topics. Required topics are marked with *,
               optional topics are based on your selected capabilities.
             </Typography>
 

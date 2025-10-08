@@ -25,6 +25,7 @@ interface ExperimentControlProps {
   onSessionChange?: (sessionId: string | null) => void;
   exportLogsAsJsonl?: () => string;
   saveAllLogsToServer?: () => Promise<boolean>;
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   robotConfig?: any; // Robot configuration for recording topics
 }
 

@@ -7,6 +7,7 @@ import { useRosContext } from '../../hooks/useRosContext';
 
 interface SoundControlPanelProps {
   ros: ROSLIB.Ros | null;
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   logSoundEvent: (eventType: string, data: any) => void;
 }
 
