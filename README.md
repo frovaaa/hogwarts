@@ -4,7 +4,7 @@ A comprehensive Wizard-of-Oz (WoZ) platform designed for operating social robots
 
 ## Demo Video
 
-https://github.com/user-attachments/assets/c63809aa-10a5-44af-a7c6-9bd206bb1618
+https://github.com/user-attachments/assets/9090dbc3-73f4-486c-8eda-4fb14fb9ae83
 
 Watch our demonstration of the Wizard-of-Oz platform in action, showcasing the dashboard interface with the TIAGo robot and demonstrating how to configure a new robot.
 
