@@ -40,6 +40,7 @@ export function useTopics(
 
     getTopicsService.callService(
       request,
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
       (result: any) => {
         try {
           if (result && result.topics) {
@@ -66,6 +67,7 @@ export function useTopics(
           setLoading(false);
         }
       },
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
       (error: any) => {
         console.error('Error fetching topics:', error);
         setError('Failed to fetch topics. Make sure rosapi is running.');
@@ -122,6 +124,7 @@ export function useTopicInfo(ros: ROSLIB.Ros | null, topicName: string) {
 
     getTopicTypeService.callService(
       request,
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
       (result: any) => {
         try {
           setTopicInfo({
@@ -137,6 +140,7 @@ export function useTopicInfo(ros: ROSLIB.Ros | null, topicName: string) {
           setLoading(false);
         }
       },
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
       (error: any) => {
         console.error('Error fetching topic info:', error);
         setError('Failed to fetch topic information');

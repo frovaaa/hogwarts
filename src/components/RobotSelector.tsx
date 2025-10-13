@@ -290,8 +290,8 @@ export default function RobotSelector() {
         <DialogTitle>Delete Robot Configuration</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the robot configuration "
-            {configToDelete}"? This action cannot be undone.
+            Are you sure you want to delete the robot configuration &quot;
+            {configToDelete}&quot;? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

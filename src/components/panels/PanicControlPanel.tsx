@@ -6,6 +6,7 @@ import { useRosContext } from '../../hooks/useRosContext';
 
 interface PanicControlPanelProps {
   ros: ROSLIB.Ros | null;
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   logSystemEvent: (eventType: string, data: any) => void;
 }
 
